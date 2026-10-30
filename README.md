@@ -18,7 +18,6 @@ O sistema, desenhado para operar no padrão de chat contínuo com limite de tent
 | Camada | Tecnologia |
 | :--- | :--- |
 | **Orquestração Multi-Agente** | LangGraph |
-| **LLM** | GPT-OSS-20B (via [NVIDIA NIM](https://build.nvidia.com/openai/gpt-oss-20b)) |
 | **Banco Vetorial & Relacional** | PostgreSQL + extensão `pgvector` |
 | **Backend / API** | FastAPI + Pydantic |
 | **Frontend** | Google Stitch (Prototipação) + React / Next.js |
@@ -31,8 +30,8 @@ O sistema, desenhado para operar no padrão de chat contínuo com limite de tent
 nexustech-support-copilot/
 ├── docs/
 │   ├── entendimento_problema.md       # Entregável 1.1: Contexto, dores, personas e KPIs
-│   ├── arquitetura_e_stack.md         # Entregáveis 1.2 a 1.4: Arquitetura, Dados e Stack
-│   └── diagrama_arquitetura.html         # Entregável 1.2: Diagrama visual
+│   ├── arquitetura_stack.md         # Entregáveis 1.2 a 1.4: Arquitetura, Dados e Stack
+│   └── diagrama.jpeg               # Entregável 1.2: Diagrama visual
 └── README.md                             # Documentação principal e roadmap
 ```
 *(Nota: Diretórios de código-fonte, dados e infraestrutura serão adicionados a partir da Entrega 2).*
