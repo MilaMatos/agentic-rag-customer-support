@@ -1,0 +1,52 @@
+# Manual Operacional NexusTech: General Inquiry
+
+### Horario de Atendimento
+
+**Contexto e Sintomas:** O cliente pergunta: "What are your hours of operation for phone support?" Em português, busca confirmar o horário exato de funcionamento do suporte telefônico da NexusTech, necessário para planejar contato em caso de urgência ou dúvidas críticas. O problema reportado é a necessidade de informação clara e oficial sobre disponibilidade de canal de voz, sem acesso imediato ao calendário de equipe.
+
+**Resolução N1 (Autoatendimento e Políticas):** No painel do ERP NexusTech, o cliente acessa: Suporte > Minhas Chamadas > Informações de Canal > Horário de Atendimento. Política SLA: suporte telefônico segunda a sexta, 08:00–18:00 (Horário de Brasília). Fila máxima 3 minutos. Fora do horário, redirecionamento automático para mensagem de voz ou formulário online com resposta em até 4h úteis. Custo zero para consulta de horário. O N1 nunca lê logs ou acessa banco de dados; todas as informações são regra de negócio exibida no painel.
+
+**Critério de Escalonamento (N2 / N3):** Transferir para N2 (Backoffice) se o cliente solicitar alteração de horário oficial, suporte fora do SLA configurado ou necessidade de readequação de equipe. Transferir para N3 (Engenharia/Segurança) se houver reclamação de falha na exibição do horário no painel, indisponibilidade do sistema de agenda ou suspeita de violação de política de acesso. O N1 encaminha o ticket com ID do cliente e horário consultado; N2/N3 têm acesso total ao backend para ajustes ou correções técnicas.
+
+### Endereco da Sede
+
+**Contexto e Sintomas:** O cliente solicita a localização exata do escritório principal da NexusTech Solutions, necessário para visitação, entrega de documentos ou compliance regulatório. Geralmente surge de novos parceiros comerciais ou clientes que necessitam do endereço físico para planejamento de deslocamento ou cumprimento de exigências contratuais.
+
+**Resolução N1 (Autoatendimento e Políticas):** No painel do ERP NexusTech, o cliente deve navegar até o módulo **Empresa > Informações da Sede**. Lá, o endereço completo, CEP, coordenadas geográficas e horário de funcionamento aparecem de forma instantânea. Política SLA: a informação de endereço está disponível 24 horas por dia, 7 dias por semana, para todos os planos contratuados, sem necessidade de solicitação ao suporte. Valor: acesso gratuito e ilimitado. Regra N1: nenhum log de sistema ou banco de dados é consultado; a exibição provém de módulo de cadastro mestre ativo.
+
+**Critério de Escalonamento (N2 / N3):** Transfira para N2 (Backoffice) se o cliente solicitar agendamento de visita física, coordenação de entrega de materiais ao endereço ou atualização de cadastro de endereço fiscal. Transfira para N3 (Engenharia/Segurança) se houver inconsistência na exibição do endereço no ERP, solicitação de protocolo de segurança para acesso à sede ou necessidade de integração com sistema de controle de visitantes. O escalonamento deve ocorrer via chamado interno com justificativa da necessidade específica do cliente.
+
+### Desconto para ONGs
+
+**Contexto e Sintomas:**  
+O cliente manifesta dúvida sobre a existência e condições de descontos especiais para organizações não-governamentais (ONGs). Trata-se de uma consulta inicial de elegibilidade, sem solicitação de alteração de contrato ou acesso a sistemas internos. O problema reside na falta de informação clara sobre benefícios corporativos voltados ao terceiro setor.
+
+**Resolução N1 (Autoatendimento e Políticas):**  
+No painel do cliente NexusTech ERP, acesse o módulo "Benefícios e Parcerias" no menu lateral esquerdo, então selecione "Programa ONG". Lá constam as políticas vigentes: desconto de 15% sobre planos Essentials e Premium para ONGs devidamente cadastradas no CNPJ ativo. SLA de processamento de solicitação: 48 horas úteis. Valores promocionais são aplicados automaticamente após validação de status sem fins lucrativos. Caso o módulo não esteja visível, verifique permissão de "Administrador de Empresa". O N1 nunca consulta logs ou bancos de dados; todas as regras são exibidas diretamente na interface de benefícios.
+
+**Critério de Escalonamento (N2 / N3):**  
+Transferir para N2 (Backoffice) se o cliente possuir CNPJ válido, mas o módulo "Programa ONG" não aparecer ou a aplicação automática do desconto falhar após 48 horas. Transferir para N3 (Engenharia/Segurança) se houver suspeita de fraude de classificação cadastral, inconsistência entre atividade principal e declaração de terceiro setor, ou solicitação de desconto superior a 20% sem documentação comprobatória. Em todos os casos de escalonamento, o N1 deve encaminhar o número do ticket e o CNPJ parcial (primeiros 8 dígitos) para a equipe receptora.
+
+### Roadmap de Produto
+
+**Contexto e Sintomas:** Cliente pergunta sobre roadmap de novas funcionalidades previstas para este ano, buscando transparência sobre cronograma de lançamentos no NexusTech ERP B2B. Deseja entender quais funcionalidades estão planejadas, suas prioridades e prazos de entrega para o corrente exercício fiscal.
+
+**Resolução N1 (Autoatendimento e Políticas):** Acesse o módulo Roadmap no painel do cliente NexusTech pelo menu lateral esquerda em Produtos > Roadmap. SLA trimestral de divulgação em até 15 dias úteis após ciclo de planejamento interno. Funcionalidades críticas anunciadas com mínimo 30 dias de antecedência. N1 não consulta logs ou bancos de dados; direcione ao atendimento autoatendido.
+
+**Critério de Escalonamento (N2 / N3):** Escalonar para N2 (Backoffice) se cliente solicitar datas específicas não publicadas no roadmap, detalhes de desenvolvimento técnico ou solicitação de funcionalidade customizada. Escalonar para N3 (Engenharia/Segurança) se houver dúvidas sobre roadmap de segurança, conformidade ou alterações de infraestrutura. Regra: se exceder conteúdo do roadmap público autoatendido, transferir imediatamente.
+
+### Solicitacao de Demo
+
+**Contexto e Sintomas:** O cliente expressa interesse em agendar uma demonstração ao vivo para sua equipe, buscando avaliar as funcionalidades da plataforma NexusTech antes de fechar contrato. O problema consiste na necessidade de acesso a uma apresentação guiada por especialistas, sem cadastro prévio ativo no sistema.
+
+**Resolução N1 (Autoatendimento e Políticas):** O cliente deve acessar o módulo "Experiências e Demos" no painel do ERP NexusTech, localizado no menu lateral esquerdo sob a aba "Soluções". Para solicitar uma demo ao vivo, clique em "Solicitar Demo", preencha o formulário com nome, e-mail e tamanho da equipe, e selecione data e horário disponível. Política SLA: demos são agendadas em até 3 (três) dias úteis após solicitação, com duração máxima de 60 minutos. Não há custo para demos padrão; demos personalizadas com ambientes específicos podem ter taxa de R$ 490,00, conforme tabela de serviços. O N1 não acessa logs ou bancos de dados; todo o agendamento ocorre via interface de autoatendimento.
+
+**Critério de Escalonamento (N2 / N3):** Caso o cliente solicite demo com requisitos técnicos avançados (integrações legadas, ambientes de teste isolados, ou demonstração de módulos não padrão), o N1 deve transferir para o N2 (Backoffice) para viabilidade comercial e contrato. Se houver solicitação de acesso a ambientes de produção, logs de sistema ou configurações de segurança, escalonar imediatamente para o N3 (Engenharia/Segurança). Além disso, se o cliente não completar o formulário de solicitação dentro de 2 (dois) dias úteis após o primeiro contato, o caso deve ser reaberto pelo N2 para nutrição de lead.
+
+### Planos e Precos
+
+- **Contexto e Sintomas:** O cliente relata dúvida sobre como funcionam as faixas de preço para equipes no ERP NexusTech, não sabendo descrever como os níveis de recursos e custos são atribuídos conforme o tamanho do time, nem como visualizar ou alterar o plano contratado.
+
+- **Resolução N1 (Autoatendimento e Políticas):** No painel do ERP NexusTech, o cliente deve acessar: Configurações da Empresa → Plano e Faturamento. Três faixas estão disponíveis: Starter (até 5 usuários, R$ 49,90/mês por usuário, recursos básicos), Growth (6 a 20 usuários, R$ 39,90/mês com 15% de desconto no anual, recursos avançados) e Enterprise (acima de 20 usuários, cotação personalizada, SLA de 24h úteis para alterações). Política de upgrade: efeito imediato com cobrança proporcional. Downgrade somente no ciclo seguinte de faturamento. Informações de faturamento são exibidas na aba "Histórico de Planos".
+
+- **Critério de Escalonamento (N2 / N3):** Transferir para N2 (Backoffice) quando o cliente solicitar alteração de faixa além dos limites padrão (ex: 50+ usuários, recursos exclusivos) ou apresentar discrepância de faturamento superior a 2 faixas. Transferir para N3 (Engenharia/Segurança) se houver erro no motor de cálculo de preços, inconsistência na API de cobrança ou solicitação de auditoria de conformidade regulatória sobre dados de preço. Em caso de dúvida, o N1 deve orientar o cliente a tentar autoatendimento antes de escalonar.
