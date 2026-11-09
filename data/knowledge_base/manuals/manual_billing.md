@@ -1,0 +1,52 @@
+# Manual Operacional NexusTech: Billing
+
+### Status de Reembolso
+
+**Contexto e Sintomas:** O cliente relata que solicitou um reembolso há 5 dias úteis e não recebeu confirmação de processamento nem visualizou o estorno na sua conta ou extrato ERP. O problema consiste na ausência de retorno visual sobre o status do reembolso, gerando incerteza sobre a conclusão da transação e o prazo de compensação, conforme política comercial B2B da NexusTech.
+
+**Resolução N1 (Autoatendimento e Políticas):** O cliente deve acessar o painel do ERP NexusTech, navegar até Módulo Financeiro > Histórico de Transações > Aba Reembolsos. O SLA de processamento é de 3 a 5 dias úteis para valores até R$ 5.000,00. Acima desse valor, validação de risco manual é necessária, estendendo o prazo em até 2 dias úteis. O N1 não acessa logs ou bancos de dados; caso o status permaneça "Pendente" após 5 dias, o cliente deve solicitar guia de verificação documental pelo próprio painel ou abrir chamado N1 para reenvio de comprovantes, sem consulta ao backend.
+
+**Critério de Escalonamento (N2 / N3):** Transfira para N2 (Backoffice) se o reembolso permanecer com status "Pendente" ou "Em Análise" por mais de 7 dias úteis, ou se envolver disputas de faturamento, estornos internacionais ou valores superiores a R$ 20.000,00. Transfira para N3 (Engenharia/Segurança) se houver indício de falha de integração de gateway de pagamento, duplicidade de transações não explicadas ou bloqueio de conta suspeito. O caso deve ser encaminhado com o ID da solicitação, data/hora do request e prints do painel ERP.
+
+### Atualizacao de Pagamento
+
+**Contexto e Sintomas:** O cliente relata falha ao atualizar o método de pagamento, especificamente impossibilidade de adicionar um novo cartão Visa ao perfil de faturamento. Ao tentar salvar, o sistema exibe mensagem de erro genérica "Não foi possível salvar o método de pagamento" e o cartão não aparece na lista de opções ativas, bloqueando a conclusão da transação.
+
+**Resolução N1 (Autoatendimento e Políticas):** O cliente deve acessar o painel do ERP NexusTech, navegar até: Configurações → Faturamento → Métodos de Pagamento → "Adicionar Novo". Informar dados completos do cartão Visa (número, validade, CVV), garantir que o banco emissor permite transações internacionais e que o limite diário é suficiente. Política SLA: tentativa máxima de 3 vezes em janela de 24h. Cartões pré-pagos ou bloqueados internacionalmente são rejeitados automaticamente. Não há custo adicional para atualização de método. Caso a mensagem persista após 3 tentativas dentro do prazo SLA, o cliente deve aguardar 1h e tentar novamente, ou contactar suporte N1 via chat institucional.
+
+**Critério de Escalonamento (N2 / N3):** Transferir para N2 (Backoffice) se: o cliente completar 3 tentativas falhas dentro de 24h e a mensagem de erro persistir; ou se o cartão for de bandeira não suportada pelo gateway padrão (exceto Visa/Mastercard/Amex). Transferir para N3 (Engenharia/Segurança) se: erro de tokenização do gateway de pagamento for retornado repetidamente; ou se houver suspeita de fraude/bloco de segurança no instrumento financeiro; ou se o problema afetar mais de 5 clientes simultaneamente no mesmo período. N1 nunca acessa logs ou bancos de dados; decisão baseia-se exclusivamente no relato do cliente e mensagens de erro visíveis na interface.
+
+### Divergencia na Fatura
+
+**Contexto e Sintomas:** O cliente recebe a fatura mensal do contrato B2B e identifica que o valor total cobrado excede o valor pactuado no instrumento contratual. Exemplos sintomáticos: contrato firmado para R$ 4.500,00 mensais, porém a fatura emitida apresenta R$ 5.100,00. A discrepância pode originar-se de cobrança de taxas administrativas não previstas, aplicação indevida de impostos ou inclusão de itens de serviço não autorizados. O cliente não reconhece os valores adicionais e solicita explicação ou correção imediata, pois o valor ultrapassa o limite de tolerância estabelecido no acordo comercial.
+
+**Resolução N1 (Autoatendimento e Políticas):** No painel do cliente NexusTech, acesse Faturamento → Minhas Faturas. Selecione a fatura e clique em 'Detalhes' → 'Comparar com Contrato'. Use o botão 'Solicitar Revisão de Fatura' para iniciar validação automática contra o contrato oficial. Política SLA: resposta em 48h úteis. Valores contratuais são fixos; taxas não pactuadas são proibidas. N1 nunca acessa logs ou bancos de dados. Se não resolvida em 5 dias, encaminhamento automático ao N2. Para cobranças inexistentes no contrato, utilize 'Denunciar Cobrança Indevida'.
+
+**Critério de Escalonamento (N2 / N3):** Escalonamento para N2 (Backoffice de Faturamento) ocorre quando a divergência persiste após 5 dias úteis sem resolução via autoatendimento, ou quando o cliente comprova cobrança de itens não descritos no contrato original. Escalonamento para N3 (Engenharia/Segurança) é obrigatório se a discrepância ultrapassar 10% do valor total do contrato, se houver suspeita de falha sistemática no gerador de faturas, alteração não autorizada de parâmetros de cobrança ou necessidade de auditoria de contrato para compliance. Regra de transferência: caso envolva múltiplos contratos ou valores acima de R$ 10.000,00 em diferença, o caso deve ser imediatamente encaminhado ao N3 com justificativa detalhada.
+
+### Segunda Via de Fatura
+
+- **Contexto e Sintomas:** O cliente solicita o envio da nota fiscal referente à transação #99283. O problema consiste na necessidade de obtenção de uma segunda via da fatura original, pois o documento não está disponível na área de downloads ou foi excluído acidentalmente. A requisição exige a identificação única da transação para geração e entrega do comprovante de pagamento dos serviços ou produtos adquiridos da NexusTech Solutions.
+
+- **Resolução N1 (Autoatendimento e Políticas):** O cliente deve acessar o módulo "Faturamento" no painel do ERP NexusTech, selecionar a opção "Segunda Via de Fatura", inserir o número da transação #99283 e clicar em "Gerar Documento". O sistema disponibilizará o PDF imediatamente para download. Política SLA: emissão em até 15 minutos para transações dentro do período de validade (até 90 dias). Valores: gratuita para clientes ativos; taxa administrativa de R$ 15,00 para solicitações fora do prazo. N1 não acessa logs ou bancos de dados; a operação é totalmente automatizada pelo fluxo de autoatendimento.
+
+- **Critério de Escalonamento (N2 / N3):** Se o sistema não localizar a transação #99283 após 2 tentativas de busca pelo cliente, transfira o caso para o N2 Backoffice para verificação manual de conciliação financeira e status de pagamento. Se houver falha técnica no gerador de segundos via, erro de integração com o módulo de documentos ou suspeita de fraude/segurança nos dados da fatura, escalonamento imediato para o N3 Engenharia/Security. O cliente deve ser comunicado sobre o encaminhamento e o número de protocolo gerado será fornecido.
+
+### Cancelamento e Renovacao
+
+**Contexto e Sintomas:**  
+O cliente informa que sua assinatura da NexusTech renovou automaticamente, contrariando seu desejo de cancelamento. O sintoma ocorre quando o sistema processa a renovação do ciclo de faturamento antes que a solicitação de cancelamento seja efetivada ou exibida no painel do cliente. Principalmente, observa-se cobrança de um novo período sem autorização explícita, gerando insatisfação e necessidade de ajuste ou reembolso. O problema está geralmente ligado à janela de tempo entre a decisão do usuário e o processamento automático do sistema, sem intervenção manual prévia.
+
+**Resolução N1 (Autoatendimento e Políticas):**  
+No painel da NexusTech Solutions, o cliente deve seguir: Home > Faturamento > Minhas Assinaturas > Selecionar Plano > Cancelar Renovação. O sistema exibe a "Próxima Data de Vencimento" e um contador de horas restantes. Política SLA: cancelamentos solicitados com no mínimo 48 horas antes do fim do ciclo de faturamento são processados sem cobrança do próximo período. Após esse prazo, a renovação é considerada confirmada e a cobrança prossegue normalmente. Não há taxa de cancelamento para planos mensais; planos anuais podem incorrer em multa de 10% conforme contrato assinado. O N1 nunca acessa logs ou bancos de dados; todas as ações são realizadas exclusivamente pelo frontend do ERP.
+
+**Critério de Escalonamento (N2 / N3):**  
+Escalonamento para N2 (Backoffice) é obrigatório quando o cliente solicitar reembolso da cobrança já realizada, quando o cancelamento dentro do prazo de 48h não atualizar o status no painel, ou quando houver disputa de cobrança (chargeback). Para N3 (Engenharia/Segurança), transfira o caso se houver suspeita de falha na lógica de automação de cancelamento, dados de assinatura inconsistentes entre frontend e backend, ou se o cliente relacionar o problema a vulnerabilidade em tokens de renovação. Em todos os escalonamentos, o N1 deve encaminhar o ID da assinatura, data/hora da solicitação e prints do painel para garantir continuidade.
+
+### Cobranca Duplicada
+
+- **Contexto e Sintomas:** O cliente relata cobrança dupla referente ao mesmo mês de serviço, anexando recibo como comprovante. O problema consiste na existência de duas transações financeiras idênticas no extrato, com data de vencimento e mês de referência iguais, configurando cobrança indevida duplicada. O cliente não identifica erro de sistema, apenas constata a duplicidade pelo documento apresentado.
+
+- **Resolução N1 (Autoatendimento e Políticas):** No painel NexusTech, acesse Módulo Faturamento > Histórico de Cobranças. Identifique a entrada duplicada com data de vencimento igual e valor R$ 297,00. O sistema automático sinaliza anomalias dentro do SLA de 48 horas. Para restituição, clique em “Solicitar Revisão” e confirme. Política oficial: cobranças duplicadas no mesmo ciclo mensal têm direito a 100% de restituição em até 5 dias úteis, sem multa ou juros. Verifique a aba “Notificações” para mensagens de sistema.
+
+- **Critério de Escalonamento (N2 / N3):** Transfira para N2 (Backoffice) quando a duplicidade envolver valor superior a R$ 500,00, diferentes ciclos de faturamento, ou solicitação de análise contratual. Transfira para N3 (Engenharia/Segurança) se houver indício de fraude no gateway, falha técnica persistente no processamento de pagamentos, ou se a duplicidade permanecer após 2 correções automáticas bem-sucedidas. O N2 gerencia reembolsos e ajustes contratuais; o N3 investiga falhas de sistema ou vulnerabilidades.

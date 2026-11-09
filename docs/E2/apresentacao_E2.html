@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrega 2 (E2) — Engenharia de Dados, KB Sintética e RAG Vetorial | NexusTech</title>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-card: #131b2e;
+      --bg-card-alt: #19233c;
+      --primary: #38bdf8;
+      --secondary: #818cf8;
+      --accent: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #26334d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-dark); color: var(--text-main);
+      overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+    }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 36px; border-bottom: 1px solid var(--border);
+      background: rgba(19, 27, 46, 0.85);
+    }
+    .brand { font-weight: 700; font-size: 1rem; letter-spacing: 0.5px; color: var(--primary); }
+    .badge {
+      background: rgba(56, 189, 248, 0.15); color: var(--primary);
+      border: 1px solid rgba(56, 189, 248, 0.35); padding: 4px 12px;
+      border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+    }
+
+    main {
+      flex: 1; position: relative; display: flex; align-items: center;
+      justify-content: center; padding: 28px 48px; overflow-y: auto;
+    }
+
+    .slide { display: none; width: 100%; max-width: 1180px; animation: fadeIn 0.25s ease-in-out; }
+    .slide.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    h1 {
+      font-size: 2.2rem; margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    h2 { font-size: 1.65rem; margin-bottom: 8px; color: var(--text-main); }
+    .subtitle { color: var(--text-muted); font-size: 1rem; margin-bottom: 24px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .card.highlight { border-color: var(--primary); background: var(--bg-card-alt); }
+    .card.success { border-color: var(--accent); }
+    .card h3 { font-size: 1.05rem; margin-bottom: 12px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .card.success h3 { color: var(--accent); }
+
+    ul { list-style: none; }
+    ul li { position: relative; padding-left: 18px; margin-bottom: 9px; font-size: 0.92rem; line-height: 1.45; color: #cbd5e1; }
+    ul li::before { content: "▸"; position: absolute; left: 0; color: var(--primary); font-weight: bold; }
+    strong { color: #ffffff; }
+    code { font-family: 'JetBrains Mono', monospace; background: rgba(255, 255, 255, 0.08); color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-size: 0.84rem; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+    .kpi { background: var(--bg-card); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 10px; padding: 14px 18px; }
+    .kpi .num { font-size: 1.7rem; font-weight: 800; color: var(--text-main); }
+    .kpi .label { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.88rem; }
+    th, td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
+    th { background: var(--bg-card-alt); color: var(--primary); font-weight: 600; }
+    td { background: var(--bg-card); color: #cbd5e1; }
+
+    footer { display: flex; justify-content: space-between; align-items: center; padding: 12px 36px; border-top: 1px solid var(--border); background: rgba(19, 27, 46, 0.85); }
+    .controls button { background: var(--bg-card-alt); color: var(--text-main); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-left: 8px; transition: all 0.15s; }
+    .controls button:hover { border-color: var(--primary); color: var(--primary); }
+    .slide-counter { font-size: 0.85rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">NEXUSTECH SUPPORT COPILOT // ENTREGA 2</div>
+    <div class="badge">Engenharia de Dados & Pipeline RAG</div>
+  </header>
+
+  <main>
+    <!-- SLIDE 1: CAPA E RESUMO EXECUTIVO -->
+    <section class="slide active">
+      <h1>Entrega 2: Pipeline de Dados, KB Sintética e PGVector</h1>
+      <p class="subtitle">Da investigação dos datasets brutos à indexação vetorial estruturada para o Copilot B2B</p>
+
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="num">20.000 &rarr; 30</div>
+          <div class="label">Tickets Brutos vs. Perguntas Únicas Reais</div>
+        </div>
+        <div class="kpi" style="border-left-color: var(--secondary);">
+          <div class="num">5 Manuais</div>
+          <div class="label">JSON + Markdown (100% PT-BR)</div>
+        </div>
+        <div class="kpi" style="border-left-color: var(--accent);">
+          <div class="num">30 Chunks</div>
+          <div class="label">Section-Level Chunking (Match 1:1)</div>
+        </div>
+        <div class="kpi" style="border-left-color: var(--warning);">
+          <div class="num">2.048 Dim</div>
+          <div class="label"><code>nemotron-3.5-embed-1b</code> + PGVector</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Escopo Concluído na Semana 2</h3>
+          <ul>
+            <li><strong>Diagnóstico de Dados:</strong> Comparação entre Bitext (27 intents) e CRM Tickets (30 queries).</li>
+            <li><strong>Higienização & LGPD (<code>ingestion_pipeline.py</code>):</strong> Remoção de PII, corte de ruído <em>Lorem Ipsum</em> e auditoria de categorias.</li>
+            <li><strong>Síntese de KB (<code>chunking_strategy.py</code>):</strong> Geração dos manuais operacionais N1/N2/N3 baseada em <em>Query2doc</em> e Amazon KDD '25.</li>
+            <li><strong>Indexação Vetorial (<code>vector_pipeline.py</code>):</strong> Segmentação por seção, geração de embeddings e validação de busca no PostgreSQL (<code>pgvector</code>).</li>
+          </ul>
+        </div>
+        <div class="card highlight">
+          <h3>Arquitetura Modular (<code>src/ingestion/</code>)</h3>
+          <ul>
+            <li><code>ingestion_pipeline.py</code> &rarr; Gera <code>data/cleaned/tickets.csv</code></li>
+            <li><code>chunking_strategy.py</code> &rarr; Gera <code>data/knowledge_base/json/*.json</code></li>
+            <li><code>export_manuals.py</code> &rarr; Exporta <code>data/knowledge_base/manuals/*.md</code></li>
+            <li><code>vector_pipeline.py</code> &rarr; Popula coleção <code>nexus_knowledge_base</code> no Docker</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: DESCOBERTAS DOS DATASETS -->
+    <section class="slide">
+      <h2>1. Raio-X dos Datasets e Descobertas de Dados</h2>
+      <p class="subtitle">Desmascarando a volumetria sintética e corrigindo o desalinhamento de subcategorias</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Critério</th>
+            <th>Dataset 1: Bitext (26.872 linhas)</th>
+            <th>Dataset 2: CRM Tickets (20.000 linhas) — Escolhido</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Estrutura Real</strong></td>
+            <td>11 categorias / <strong>27 intenções únicas</strong></td>
+            <td>5 categorias / <strong>30 frases únicas</strong> (6 por categoria)</td>
+          </tr>
+          <tr>
+            <td><strong>Padrão Sintético</strong></td>
+            <td>Variação linguística (reescrita com <em>flags</em> de estilo)</td>
+            <td>Frase real no início + sufixo aleatório (<em>Lorem Ipsum</em>)</td>
+          </tr>
+          <tr>
+            <td><strong>Aderência B2B</strong></td>
+            <td>Baixa (foco em e-commerce / entregas B2C)</td>
+            <td><strong>Alta</strong> (ERP SaaS: API 500, 2FA, Faturas, Planos)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="grid-2" style="margin-top: 20px;">
+        <div class="card">
+          <h3>Problema Descoberto: <code>Ticket_Subject</code></h3>
+          <ul>
+            <li>No CSV original, <code>Ticket_Subject</code> foi sorteado de forma <strong>independente</strong> da pergunta real em <code>Ticket_Description</code>.</li>
+            <li><strong>Exemplo real:</strong> O subject <code>Subscription upgrade</code> trazia a pergunta <em>"How do I update my profile picture?"</em>.</li>
+            <li>Agrupar diretamente pelo <code>Ticket_Subject</code> causava <em>semantic drift</em> nos manuais gerados.</li>
+          </ul>
+        </div>
+        <div class="card success">
+          <h3>Solução Aplicada na Pipeline</h3>
+          <ul>
+            <li><strong>Regex de Limpeza:</strong> Remoção de <code>"Hi Support,"</code> e corte exato na primeira pontuação (<code>[.!?]</code>), eliminando 100% do <em>Lorem Ipsum</em>.</li>
+            <li><strong>Remoção de PII:</strong> Exclusão de <code>Customer_Name</code> e <code>Customer_Email</code>.</li>
+            <li><strong>Catálogo Canônico:</strong> Mapeamento direto das <strong>30 perguntas reais</strong> para 30 subcategorias curtas em português.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: PESQUISA CIENTÍFICA E GERAÇÃO DA KB -->
+    <section class="slide">
+      <h2>2. Geração de Pseudo-Documentos (Base de Conhecimento)</h2>
+      <p class="subtitle">Fundamentação científica e padronização dos manuais operacionais N1, N2 e N3</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Embasamento na Literatura</h3>
+          <ul>
+            <li><strong>Query2doc (Microsoft Research, EMNLP 2023):</strong> Expansão de queries curtas em pseudo-documentos ricos elimina o <em>lexical gap</em> na busca vetorial.</li>
+            <li><strong>Automated KB Construction (Amazon, KDD 2025):</strong> Síntese estruturada de artigos operacionais a partir de tickets históricos agrupados por taxonomia.</li>
+          </ul>
+        </div>
+        <div class="card highlight">
+          <h3>Padronização e Cobertura da KB</h3>
+          <ul>
+            <li><strong>5 Manuais Consolidados:</strong> <code>Account</code>, <code>Billing</code>, <code>Technical</code>, <code>Fraud</code> e <code>General Inquiry</code>.</li>
+            <li><strong>30 Subcategorias Mapeadas:</strong> Cobertura 1:1 das 30 perguntas reais identificadas no dataset.</li>
+            <li><strong>Dupla Persistência:</strong> Arquivos estruturados em <code>json/</code> para ingestão vetorial e <code>manuals/*.md</code> para leitura e auditoria.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top: 18px;">
+        <div class="card">
+          <h3>1. Contexto e Sintomas</h3>
+          <ul>
+            <li>Descreve o erro exato relatado pelo cliente na abertura do chamado.</li>
+            <li>Garante alta similaridade semântica com a query de entrada.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>2. Resolução N1 (Self-Service)</h3>
+          <ul>
+            <li>Caminhos exatos de menu no ERP NexusTech, SLAs e valores.</li>
+            <li><strong>Regra Rígida:</strong> N1 é 100% autoatendimento (zero acesso a logs/banco).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>3. Escalonamento (N2 / N3)</h3>
+          <ul>
+            <li>Gatilhos claros para <strong>N2 (Backoffice)</strong> e <strong>N3 (Engenharia/Segurança)</strong>.</li>
+            <li>Base para os futuros Agentes Auditor e de Resumo de Handoff.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: ESTRATÉGIA DE CHUNKING -->
+    <section class="slide">
+      <h2>3. Estratégia de Chunking: Semantic vs. Section-Level</h2>
+      <p class="subtitle">Análise baseada no estudo "Finding the Best Chunking Strategy" (NVIDIA Developer Blog)</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>Fixed-Size / Recursive</h3>
+          <ul>
+            <li>Corta por contagem de caracteres ou parágrafos soltos.</li>
+            <li><strong>Risco Crítico:</strong> Cortar uma política de SLA ao meio, separando o sintoma da regra de escalonamento N2/N3.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Semantic Chunking</h3>
+          <ul>
+            <li>Corta quando a distância vetorial entre frases consecutivas muda.</li>
+            <li><strong>Problema nos Manuais:</strong> A transição entre "Sintoma" e "Regra de Engenharia N3" muda o vocabulário e fragmenta o mesmo procedimento.</li>
+          </ul>
+        </div>
+        <div class="card success">
+          <h3>Section-Level (Escolhida)</h3>
+          <ul>
+            <li>Usa <code>MarkdownHeaderTextSplitter</code> nos níveis <code>#</code> e <code>###</code>.</li>
+            <li><strong>Coesão Total:</strong> Cada subcategoria vira 1 chunk atômico contendo Sintoma + N1 + N2/N3 juntos.</li>
+            <li><code>strip_headers=False</code> preserva o título no vetor.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card highlight" style="margin-top: 20px;">
+        <h3>Resultado do Particionamento Estrutural</h3>
+        <ul>
+          <li><strong>5 Manuais Consolidados</strong> &rarr; <strong>30 Chunks Atômicos</strong> (6 subcategorias específicas por manual, diretrizes gerais ignoradas).</li>
+          <li>Identificadores únicos determinísticos no padrão <code>MAN-ACCO-001-SEC-01</code> até <code>MAN-TECH-001-SEC-06</code>.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: REQUISITOS 2.4 (EMBEDDINGS & METADADOS) E 2.5 (VALIDAÇÃO DA INGESTÃO) -->
+    <section class="slide">
+      <h2>4. Geração de Embeddings e Validação da Ingestão</h2>
+      <p class="subtitle">Armazenamento com metadados no PGVector e evidências práticas de recuperação semântica</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>2.4. Geração e Armazenamento de Embeddings</h3>
+          <ul>
+            <li><strong>Modelo de Embedding:</strong> <code>nvidia/nemotron-3.5-embed-1b</code> (vetores densos de <strong>2.048 dimensões</strong> em <code>float</code>).</li>
+            <li><strong>Armazenamento Vetorial:</strong> PostgreSQL + extensão <code>pgvector</code> (coleção <code>nexus_knowledge_base</code> com suporte <code>JSONB</code>).</li>
+            <li><strong>Metadados Associados a Cada Chunk:</strong>
+              <br/><code>chunk_id</code>: ID único da seção (ex: <code>MAN-TECH-001-SEC-03</code>)
+              <br/><code>doc_id</code>: ID do manual pai (ex: <code>MAN-TECH-001</code>)
+              <br/><code>category</code> &amp; <code>subcategory</code>: Tags de classificação (ex: <code>Technical</code> / <code>Travamento do Dashboard</code>)
+              <br/><code>source</code> &amp; <code>source_file</code>: Tipo (<code>synthetic_knowledge_document</code>) e arquivo de origem.
+            </li>
+          </ul>
+        </div>
+
+        <div class="card success">
+          <h3>2.5. Evidências de Validação da Ingestão</h3>
+          <ul>
+            <li><strong>Contagem Validada no Banco:</strong> <code>30 chunks</code> processados &rarr; <code>30 embeddings</code> gravados sem perdas (<code>100%</code> de aproveitamento).</li>
+            <li><strong>Amostra de Vetor Validado (2.048 dim):</strong>
+              <br/><code>[0.0882568, -0.0032882, -0.0509643, -0.0098724, ...]</code>
+            </li>
+            <li><strong>Query de Teste Executada no PGVector:</strong>
+              <br/><em>"The dashboard is not loading any data, just a spinning wheel."</em>
+            </li>
+            <li><strong>Retorno Coerente (Top-1 Cross-Lingual):</strong>
+              <br/>Chunk: <code>MAN-TECH-001-SEC-03</code> | Categoria: <code>Technical</code>
+              <br/>Subcategoria: <code>Travamento do Dashboard</code>
+              <br/>Conteúdo: Retornou com precisão os passos do autoatendimento (N1) e regras de transbordo (N2/N3) específicos.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="slide-counter" id="counter">Slide 1 de 5</div>
+    <div class="controls">
+      <button onclick="changeSlide(-1)">&#8592; Anterior</button>
+      <button onclick="changeSlide(1)">Próximo &#8594;</button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('counter');
+    let current = 0;
+
+    function changeSlide(direction) {
+      slides[current].classList.remove('active');
+      current = (current + direction + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      counter.textContent = `Slide ${current + 1} de ${slides.length}`;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') changeSlide(1);
+      if (e.key === 'ArrowLeft') changeSlide(-1);
+    });
+  </script>
+</body>
+</html>
