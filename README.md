@@ -9,7 +9,7 @@ Este projeto resolve o **Problema 1 (Copilot de Atendimento ao Cliente)** para a
 
 O **NexusTech Support Copilot** é um sistema multi-agente orquestrado que auxilia atendentes de suporte N1 (e clientes via chat) na resolução rápida e padronizada de chamados. 
 
-O sistema, desenhado para operar no padrão de chat contínuo com limite de tentativas, classifica automaticamente a intenção do usuário, realiza buscas semânticas em bases de conhecimento, redige respostas fundamentadas com citação de fontes, audita a qualidade da resposta (prevenindo alucinações) e elabora resumos executivos quando o chamado precisa ser escalado para especialistas técnicos.
+O sistema, desenhado para operar no padrão de chat contínuo com limite de tentativas (Bounded Multi-Turn), classifica automaticamente a intenção do usuário, realiza buscas semânticas em bases de conhecimento, redige respostas fundamentadas com citação de fontes, audita a qualidade da resposta (prevenindo alucinações) e elabora resumos executivos quando o chamado precisa ser escalado para especialistas técnicos.
 
 ---
 
@@ -17,10 +17,9 @@ O sistema, desenhado para operar no padrão de chat contínuo com limite de tent
 
 | Camada | Tecnologia |
 | :--- | :--- |
-| **Orquestração Multi-Agente** | LangGraph |
+| **Orquestração Multi-Agente** | CrewAI |
 | **Banco Vetorial & Relacional** | PostgreSQL + extensão `pgvector` |
-| **Backend / API** | FastAPI + Pydantic |
-| **Frontend** | Google Stitch (Prototipação) + React / Next.js |
+| **Infraestrutura e Dados** | Docker, Python |
 
 ---
 
@@ -28,15 +27,31 @@ O sistema, desenhado para operar no padrão de chat contínuo com limite de tent
 
 ```text
 nexustech-support-copilot/
-├── docs/
-│   ├── entendimento_problema.md       # Entregável 1.1: Contexto, dores, personas e KPIs
-│   ├── arquitetura_stack.md         # Entregáveis 1.2 a 1.4: Arquitetura, Dados e Stack
-│   └── diagrama.jpeg               # Entregável 1.2: Diagrama visual
+├── data/                                 # Datasets e Base de Conhecimento
+│   ├── cleaned/                          # Dados tabulares processados (ex: tickets.csv)
+│   └── knowledge_base/                   # Chunks (json) e Manuais sintéticos (manuals)
+├── docs/                                 # Documentação do projeto por entrega
+│   ├── E1/                               # Entrega 1: Planejamento
+│   │   ├── apresentacao_E1.html
+│   │   ├── arquitetura_stack.md
+│   │   ├── diagrama.jpeg
+│   │   └── entendimento_do_problema.md
+│   └── E2/                               # Entrega 2: Dados e Ingestão
+│       ├── apresentacao_E2.html
+│       ├── estrategia_chunking.md
+│       └── pesquisa_dados_kb.md
+├── src/
+│   └── ingestion/                        # Scripts de processamento e ingestão
+│       ├── chunking_strategy.py          # Lógica de particionamento (Chunking)
+│       ├── export_manuals.py             # Geração de manuais
+│       ├── ingestion_pipeline.py         # Pipeline de preparação dos dados
+│       └── vector_pipeline.py            # Ingestão vetorial no PostgreSQL/pgvector
+├── .env                                  # Variáveis de ambiente (ignorado no git)
+├── .gitignore
+├── docker-compose.yml                    # Setup de infra (PostgreSQL + pgvector)
+├── requirements.txt                      # Dependências Python
 └── README.md                             # Documentação principal e roadmap
 ```
-*(Nota: Diretórios de código-fonte, dados e infraestrutura serão adicionados a partir da Entrega 2).*
-
----
 
 ## 📅 Cronograma e Status das Entregas (Backlog)
 
@@ -46,9 +61,9 @@ nexustech-support-copilot/
   - [x] 1.3 Mapeamento e avaliação dos datasets
   - [x] 1.4 Definição do stack técnico
   - [x] 1.5 Inicialização e estruturação do repositório GitHub
-- [ ] **Entrega 2 (31/10) — Infraestrutura e Ingestão de Dados**
-  - [ ] Setup do ambiente e banco PostgreSQL + `pgvector`
-  - [ ] Pipeline de ingestão, limpeza e geração de embeddings
+- [x] **Entrega 2 (31/10) — Infraestrutura e Ingestão de Dados**
+  - [x] Setup do ambiente e banco PostgreSQL + `pgvector` via Docker
+  - [x] Pipeline de pesquisa, limpeza, chunking semântico e geração de embeddings
 - [ ] **Entrega 3 (07/11) — Pipeline RAG Funcional**
   - [ ] Módulo de retrieval e conexão com a LLM
 - [ ] **Entrega 4 (14/11) — Primeiro Agente Funcional**
