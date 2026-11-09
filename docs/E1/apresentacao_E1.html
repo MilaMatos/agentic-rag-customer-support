@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresentação E1 — NexusTech Support Copilot</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-light: #f8fafc;
+            --primary: #1a365d;
+            --primary-accent: #2563eb;
+            --secondary: #0ea5e9;
+            --accent-orange: #ea580c;
+            --accent-green: #16a34a;
+            --accent-purple: #7c3aed;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1120;
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .deck {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Slide com suporte a rolagem fluida vertical quando o conteúdo se estende */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-light);
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 44px 72px 88px 72px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .slide.active {
+            display: flex;
+            opacity: 1;
+            z-index: 10;
+        }
+
+        /* Capa */
+        .slide.cover {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
+            color: #ffffff;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 80px 100px;
+        }
+
+        .cover-badge {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 8px 18px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            color: #93c5fd;
+        }
+
+        .cover h1 {
+            font-size: 54px;
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -1.5px;
+            margin-bottom: 18px;
+            max-width: 900px;
+        }
+
+        .cover .subtitle {
+            font-size: 22px;
+            font-weight: 300;
+            color: #cbd5e1;
+            margin-bottom: 48px;
+            max-width: 780px;
+            line-height: 1.5;
+        }
+
+        .cover-grid {
+            display: grid;
+            grid-template-columns: repeat(4, auto);
+            gap: 48px;
+            border-top: 1px solid rgba(255, 255, 255, 0.18);
+            padding-top: 32px;
+            width: 100%;
+        }
+
+        .cover-meta-item .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .cover-meta-item .value {
+            font-size: 17px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* Cabeçalho padrão dos slides */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 14px;
+            margin-bottom: 24px;
+            flex-shrink: 0;
+        }
+
+        .slide-header-left .tag {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--primary-accent);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .slide-header-left h2 {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+        }
+
+        .slide-header-right {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: #e2e8f0;
+            padding: 6px 14px;
+            border-radius: 6px;
+        }
+
+        .section-subtitle {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 8px 0 4px 0;
+            padding-left: 10px;
+            border-left: 4px solid var(--primary-accent);
+        }
+
+        .content-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+        }
+
+        /* Cards */
+        .card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 22px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+        }
+
+        .card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card p, .card li {
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: #334155;
+        }
+
+        .card ul {
+            padding-left: 18px;
+        }
+
+        .card li {
+            margin-bottom: 6px;
+        }
+
+        .card-accent-blue { border-top: 4px solid var(--primary-accent); }
+        .card-accent-orange { border-top: 4px solid var(--accent-orange); }
+        .card-accent-green { border-top: 4px solid var(--accent-green); }
+        .card-accent-purple { border-top: 4px solid var(--accent-purple); }
+
+        /* KPI Boxes */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .kpi-card .kpi-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .kpi-card .kpi-Flow {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .kpi-old {
+            font-size: 15px;
+            color: #f87171;
+            text-decoration: line-through;
+            font-weight: 500;
+        }
+
+        .kpi-new {
+            font-size: 26px;
+            font-weight: 800;
+            color: #4ade80;
+        }
+
+        .kpi-desc {
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+
+        /* Mermaid Box */
+        .mermaid-container {
+            background: #0f172a;
+            border-radius: 14px;
+            padding: 24px 20px;
+            border: 1px solid #334155;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            overflow-x: auto;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .mermaid {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            font-size: 13.5px;
+        }
+
+        thead th {
+            background: var(--primary);
+            color: #ffffff;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        tbody td {
+            padding: 11px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .b-tool { background: #f3e8ff; color: #6b21a8; }
+        .b-agent { background: #dbeafe; color: #1e40af; }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Barra Inferior */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 52px;
+            background: #0f172a;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            z-index: 100;
+            border-top: 1px solid #334155;
+        }
+
+        .nav-info {
+            font-size: 13px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-btn {
+            background: #1e293b;
+            color: #ffffff;
+            border: 1px solid #475569;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary-accent);
+            border-color: var(--primary-accent);
+        }
+
+        .progress-indicator {
+            font-size: 13px;
+            font-weight: 700;
+            color: #e2e8f0;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        @media print {
+            body { overflow: visible; height: auto; background: #fff; }
+            .deck { height: auto; }
+            .slide {
+                position: relative;
+                display: flex !important;
+                opacity: 1 !important;
+                page-break-after: always;
+                height: auto;
+                min-height: 100vh;
+                padding: 40px;
+            }
+            .nav-bar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="deck">
+
+    <!-- ==========================================
+         SLIDE 1: CAPA
+    =========================================== -->
+    <section class="slide cover active">
+        <div class="cover-badge">Entrega E1 — Planejamento e Design do Sistema</div>
+        <h1>NexusTech Support Copilot</h1>
+        <div class="subtitle">
+            Sistema Multi-Agente com RAG para Triagem, Resolução Fundamentada em N1 e Handoff Inteligente para N2/N3
+        </div>
+        <div class="cover-grid">
+            <div class="cover-meta-item">
+                <div class="label">Problema de Negócio</div>
+                <div class="value">Problema 1 — Customer Support</div>
+            </div>
+            <div class="cover-meta-item">
+                <div class="label">Empresa Fictícia</div>
+                <div class="value">NexusTech Solutions (SaaS ERP)</div>
+            </div>
+            <div class="cover-meta-item">
+                <div class="label">Arquitetura</div>
+                <div class="value">4 Agentes LLM + 1 Tool RAG</div>
+            </div>
+            <div class="cover-meta-item">
+                <div class="label">Stack Principal</div>
+                <div class="value">LangGraph • PG Vector • FastAPI</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 2: ENTENDIMENTO DO PROBLEMA (E1.1)
+    =========================================== -->
+    <section class="slide">
+        <div class="slide-header">
+            <div class="slide-header-left">
+                <span class="tag">Entregável 1.1 — Entendimento do Problema</span>
+                <h2>Contexto Operacional, Personas e Dores Críticas</h2>
+            </div>
+            <div class="slide-header-right">NexusTech Solutions (15.000 clientes • 80 atendentes)</div>
+        </div>
+
+        <div class="content-body">
+            <div class="grid-3">
+                <div class="card card-accent-blue">
+                    <h3>Atendente N1 (Modo Copilot)</h3>
+                    <p><strong>Usuário Primário:</strong> Linha de frente sob alta pressão e turnover.</p>
+                    <ul>
+                        <li>Perde tempo alternando entre CRM, Wikis e manuais.</li>
+                        <li><strong>Expectativa:</strong> Receber classificação, resposta fundamentada pronta e fontes citadas para validar em segundos.</li>
+                    </ul>
+                </div>
+                <div class="card card-accent-green">
+                    <h3>Cliente Final B2B (Chat)</h3>
+                    <p><strong>Usuário Secundário:</strong> Operadores e gestores do ERP em nuvem.</p>
+                    <ul>
+                        <li>Sofre com demora e respostas inconsistentes para dúvidas simples.</li>
+                        <li><strong>Expectativa:</strong> Resolução rápida em poucos turnos (Bounded Multi-Turn) ou transição sem repetir tudo.</li>
+                    </ul>
+                </div>
+                <div class="card card-accent-orange">
+                    <h3>Especialista N2 / N3</h3>
+                    <p><strong>Beneficiário do Handoff:</strong> Analistas técnicos seniores e engenharia.</p>
+                    <ul>
+                        <li>Perde até 40% do tempo com chamados simples de N1 ou lendo logs longos.</li>
+                        <li><strong>Expectativa:</strong> Receber apenas casos complexos com um <strong>Resumo Executivo de Handoff</strong>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card" style="background: #fff8f6; border-left: 4px solid var(--accent-orange);">
+                <h3>Diagnóstico das 5 Dores Críticas do Negócio</h3>
+                <div class="grid-2" style="margin-top: 8px;">
+                    <ul>
+                        <li><strong>Alto volume repetitivo:</strong> Dúvidas já documentadas em FAQs não são encontradas rapidamente.</li>
+                        <li><strong>TMA elevado (12 min):</strong> Tempo gasto pesquisando em sistemas fragmentados.</li>
+                        <li><strong>Inconsistência:</strong> Atendentes diferentes dão respostas distintas para a mesma pergunta.</li>
+                    </ul>
+                    <ul>
+                        <li><strong>Escalonamento indevido (38%):</strong> Chamados de N1 sobem para N2/N3 por falta de acesso fácil ao procedimento.</li>
+                        <li><strong>Falta de rastreabilidade:</strong> Ausência de histórico estruturado indicando qual documento fundamentou cada resposta.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-title">Tempo Médio (TMA)</div>
+                    <div class="kpi-Flow"><span class="kpi-old">12 min</span> <span>→</span> <span class="kpi-new">&lt; 4 min</span></div>
+                    <div class="kpi-desc">-66% no tempo operacional</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Resolução em N1 (FCR)</div>
+                    <div class="kpi-Flow"><span class="kpi-old">45%</span> <span>→</span> <span class="kpi-new">&gt; 75%</span></div>
+                    <div class="kpi-desc">Autonomia na linha de frente</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">NPS do Suporte</div>
+                    <div class="kpi-Flow"><span class="kpi-old">32</span> <span>→</span> <span class="kpi-new">&gt; 55</span></div>
+                    <div class="kpi-desc">Retenção e redução de churn</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Escalonamento Indevido</div>
+                    <div class="kpi-Flow"><span class="kpi-old">38%</span> <span>→</span> <span class="kpi-new">&lt; 15%</span></div>
+                    <div class="kpi-desc">Proteção da agenda N2/N3</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 3: ARQUITETURA INTEGRADA (FLUXO MERMAID + PAPÉIS)
+    =========================================== -->
+    <section class="slide">
+        <div class="slide-header">
+            <div class="slide-header-left">
+                <span class="tag">Entregável 1.2 — Arquitetura e Orquestração do Sistema</span>
+                <h2>Fluxo em Grafo Cíclico e Responsabilidades dos Agentes</h2>
+            </div>
+            <div class="slide-header-right">Role a página para ver os detalhes ↓</div>
+        </div>
+
+        <div class="content-body">
+            <!-- Diagrama Dinâmico Mermaid mantendo estrutura, conexões e orientação LR -->
+            <div class="mermaid-container" style="padding: 18px 24px;">
+                <svg viewBox="0 0 1180 360" width="100%" height="340px" xmlns="http://www.w3.org/2000/svg" style="font-family: 'Inter', sans-serif;">
+                    <defs>
+                        <!-- Setas brancas/claras para o fluxo principal -->
+                        <marker id="arrow-flow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#cbd5e1"/>
+                        </marker>
+                        <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#4ade80"/>
+                        </marker>
+                        <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#fb923c"/>
+                        </marker>
+                    </defs>
+
+                    <!-- =========================================================
+                         LINHAS DE CONEXÃO DUPLAS COM A RASTREABILIDADE (CAMADA FUNDO)
+                         (Todas em ângulos retos 90 graus, sem cruzar textos)
+                    ========================================================== -->
+                    <!-- Classificador (movido para a direita, x=395) -> desce até y=245 -> entra na esquerda da Rastreabilidade (x=515) -->
+                    <path d="M 395 132 L 395 245 L 515 245" fill="none" stroke="#64748b" stroke-width="4.5"/>
+                    <path d="M 395 132 L 395 245 L 515 245" fill="none" stroke="#0f172a" stroke-width="1.5"/>
+
+                    <!-- RAG (x=575, y=134) -> desce reto para o topo da Rastreabilidade (x=575, y=215) -->
+                    <line x1="575" y1="134" x2="575" y2="215" stroke="#64748b" stroke-width="4.5"/>
+                    <line x1="575" y1="134" x2="575" y2="215" stroke="#0f172a" stroke-width="1.5"/>
+
+                    <!-- Redator (x=715, y=132) -> desce até y=232 -> entra na direita da Rastreabilidade (x=645) -->
+                    <path d="M 715 132 L 715 232 L 645 232" fill="none" stroke="#64748b" stroke-width="4.5"/>
+                    <path d="M 715 132 L 715 232 L 645 232" fill="none" stroke="#0f172a" stroke-width="1.5"/>
+
+                    <!-- Auditor (movido para a esquerda, x=830) -> desce até y=258 -> entra na direita da Rastreabilidade (x=638) -->
+                    <path d="M 830 132 L 830 258 L 638 258" fill="none" stroke="#64748b" stroke-width="4.5"/>
+                    <path d="M 830 132 L 830 258 L 638 258" fill="none" stroke="#0f172a" stroke-width="1.5"/>
+
+                    <!-- Rastreabilidade (base x=575, y=275) -> desce até y=296 -> vai para a esquerda do Resumo (x=790, y=296) -->
+                    <path d="M 575 275 L 575 296 L 790 296" fill="none" stroke="#f59e0b" stroke-width="4.5"/>
+                    <path d="M 575 275 L 575 296 L 790 296" fill="none" stroke="#0f172a" stroke-width="1.5"/>
+
+
+                    <!-- =========================================================
+                         SETAS ORTOGONAIS DO FLUXO DE ORQUESTRAÇÃO
+                    ========================================================== -->
+                    <!-- 1. Mensagem Aprovada (Retorno pelo topo: Auditor -> Direita -> Topo -> Interface N1) -->
+                    <path d="M 940 104 L 1015 104 L 1015 22 L 102 22 L 102 74" fill="none" stroke="#4ade80" stroke-width="1.8" marker-end="url(#arrow-green)"/>
+                    <rect x="938" y="68" width="124" height="22" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                    <text x="1000" y="83" fill="#4ade80" font-size="11" font-weight="600" text-anchor="middle">Mensagem Aprovada</text>
+
+                    <!-- 2. Interface -> Classificador -->
+                    <line x1="185" y1="104" x2="294" y2="104" stroke="#cbd5e1" stroke-width="1.8" marker-end="url(#arrow-flow)"/>
+                    <rect x="195" y="86" width="92" height="34" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                    <text x="241" y="100" fill="#e2e8f0" font-size="10.5" text-anchor="middle">Mensagem Inicial</text>
+                    <text x="241" y="114" fill="#e2e8f0" font-size="10.5" text-anchor="middle">ou continuação</text>
+
+                    <!-- 3. Classificador -> RAG -->
+                    <line x1="415" y1="104" x2="538" y2="104" stroke="#cbd5e1" stroke-width="1.8" marker-end="url(#arrow-flow)"/>
+                    <rect x="424" y="93" width="106" height="22" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                    <text x="477" y="108" fill="#e2e8f0" font-size="10.5" text-anchor="middle">Classificação para N1</text>
+
+                    <!-- 4. RAG -> Redator -->
+                    <line x1="605" y1="104" x2="654" y2="104" stroke="#cbd5e1" stroke-width="1.8" marker-end="url(#arrow-flow)"/>
+
+                    <!-- 5. Redator -> Auditor -->
+                    <line x1="775" y1="104" x2="819" y2="104" stroke="#cbd5e1" stroke-width="1.8" marker-end="url(#arrow-flow)"/>
+
+                    <!-- 6. Loop: Auditor -> Redator (Resposta com confiança baixa) -->
+                    <path d="M 882 76 L 882 48 L 715 48 L 715 72" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+                    <rect x="726" y="37" width="145" height="22" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                    <text x="798" y="52" fill="#fed7aa" font-size="10.5" text-anchor="middle">Resposta com confiança baixa</text>
+
+                    <!-- 7. Auditor -> Resumo (Limite de tentativas atingido) - Movido para x=930 -->
+                    <line x1="900" y1="132" x2="900" y2="275" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+                    <rect x="847" y="176" width="106" height="32" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                    <text x="900" y="190" fill="#fed7aa" font-size="10.5" text-anchor="middle">Limite de tentativas</text>
+                    <text x="900" y="203" fill="#fed7aa" font-size="10.5" text-anchor="middle">atingido</text>
+
+                    <!-- 8. Classificador -> Resumo (Classificação para N2 ou N3) -->
+                    <path d="M 330 132 L 330 338 L 850 338 L 850 326" fill="none" stroke="#fb923c" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+                    <rect x="282" y="176" width="96" height="32" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                    <text x="330" y="190" fill="#fed7aa" font-size="10.5" text-anchor="middle">Classificação</text>
+                    <text x="330" y="203" fill="#fed7aa" font-size="10.5" text-anchor="middle">para N2 ou N3</text>
+
+                    <!-- 9. Resumo -> Atendente N2 ou N3 -->
+                    <line x1="920" y1="302" x2="1002" y2="302" stroke="#cbd5e1" stroke-width="1.8" marker-end="url(#arrow-flow)"/>
+
+                    <!-- =========================================================
+                         NÓS E COMPONENTES (DESIGN MERMAID DARK CORPORATIVO)
+                    ========================================================== -->
+                    <!-- Ator 1: Interface de Atendimento (Usuário / Atendente N1) -->
+                    <rect x="20" y="78" width="165" height="52" rx="26" fill="#1e293b" stroke="#94a3b8" stroke-width="2"/>
+                    <text x="102" y="100" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">Interface de Atendimento</text>
+                    <text x="102" y="116" fill="#cbd5e1" font-size="11" text-anchor="middle">(Usuário / Atendente N1)</text>
+
+                    <!-- Agente 1: Classificador (Subroutine Box) -->
+                    <rect x="298" y="76" width="117" height="56" rx="4" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/>
+                    <line x1="308" y1="76" x2="308" y2="132" stroke="#60a5fa" stroke-width="2"/>
+                    <line x1="405" y1="76" x2="405" y2="132" stroke="#60a5fa" stroke-width="2"/>
+                    <text x="356" y="108" fill="#ffffff" font-size="13.5" font-weight="700" text-anchor="middle">Classificador</text>
+
+                    <!-- Ferramenta: RAG (Circle) -->
+                    <circle cx="575" cy="104" r="30" fill="#4c1d95" stroke="#c084fc" stroke-width="2"/>
+                    <text x="575" y="109" fill="#ffffff" font-size="13.5" font-weight="700" text-anchor="middle">RAG</text>
+
+                    <!-- Agente 2: Redator (Subroutine Box) -->
+                    <rect x="658" y="76" width="117" height="56" rx="4" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/>
+                    <line x1="668" y1="76" x2="668" y2="132" stroke="#60a5fa" stroke-width="2"/>
+                    <line x1="765" y1="76" x2="765" y2="132" stroke="#60a5fa" stroke-width="2"/>
+                    <text x="716" y="108" fill="#ffffff" font-size="13.5" font-weight="700" text-anchor="middle">Redator</text>
+
+                    <!-- Agente 3: Auditor (Subroutine Box) -->
+                    <rect x="823" y="76" width="117" height="56" rx="4" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/>
+                    <line x1="833" y1="76" x2="833" y2="132" stroke="#60a5fa" stroke-width="2"/>
+                    <line x1="930" y1="76" x2="930" y2="132" stroke="#60a5fa" stroke-width="2"/>
+                    <text x="881" y="108" fill="#ffffff" font-size="13.5" font-weight="700" text-anchor="middle">Auditor</text>
+
+                    <!-- Caixa Central Inferior: Rastreabilidade de interações -->
+                    <polygon points="525,215 650,215 635,275 510,275" fill="#0f172a" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 4"/>
+                    <text x="580" y="241" fill="#fde68a" font-size="12" font-weight="700" text-anchor="middle">Rastreabilidade</text>
+                    <text x="580" y="258" fill="#fde68a" font-size="12" font-weight="700" text-anchor="middle">de interações</text>
+
+                    <!-- Agente 4: Resumo (Subroutine Box - Nível Inferior Direita) -->
+                    <rect x="790" y="274" width="130" height="52" rx="4" fill="#7c2d12" stroke="#fb923c" stroke-width="2"/>
+                    <line x1="802" y1="274" x2="802" y2="326" stroke="#fb923c" stroke-width="2"/>
+                    <line x1="908" y1="274" x2="908" y2="326" stroke="#fb923c" stroke-width="2"/>
+                    <text x="855" y="305" fill="#ffffff" font-size="13.5" font-weight="700" text-anchor="middle">Resumo</text>
+
+                    <!-- Ator 2: Atendente N2 ou N3 -->
+                    <rect x="1006" y="276" width="145" height="52" rx="26" fill="#1e293b" stroke="#94a3b8" stroke-width="2"/>
+                    <text x="1078" y="298" fill="#ffffff" font-size="12" font-weight="600" text-anchor="middle">Atendente</text>
+                    <text x="1078" y="314" fill="#cbd5e1" font-size="12" font-weight="600" text-anchor="middle">N2 ou N3</text>
+                </svg>
+            </div>
+
+            <div class="section-subtitle">Papel de Cada Componente na Arquitetura</div>
+
+            <!-- Resumo dos Agentes e Ferramenta RAG (sem Entrada/Saída) -->
+            <div class="grid-5">
+                <div class="card card-accent-blue">
+                    <h3>1. Classificador</h3>
+                    <p><span class="badge b-agent">Agente LLM</span></p>
+                    <p style="margin-top:8px;">Analisa a mensagem inicial ou de continuação no chat, identifica se trata do mesmo problema ou de um novo tópico, classifica categoria/prioridade e define o nível sugerido (N1, N2 ou N3).</p>
+                </div>
+
+                <div class="card card-accent-purple">
+                    <h3>RAG</h3>
+                    <p><span class="badge b-tool">Ferramenta / Nó</span></p>
+                    <p style="margin-top:8px;">Nó determinístico de execução posicionado após o Classificador. Converte a busca em embedding e consulta o PG Vector em duas camadas (Manuais Oficiais e Tickets Históricos) sem custo extra de LLM.</p>
+                </div>
+
+                <div class="card card-accent-blue">
+                    <h3>2. Redator</h3>
+                    <p><span class="badge b-agent">Agente LLM</span></p>
+                    <p style="margin-top:8px;">Constrói a resposta sugerida ancorada estritamente nos procedimentos do Manual Oficial e nos exemplos do Bitext trazidos pelo RAG, citando obrigatoriamente os IDs dos documentos usados.</p>
+                </div>
+
+                <div class="card card-accent-blue">
+                    <h3>3. Auditor</h3>
+                    <p><span class="badge b-agent">Agente LLM</span></p>
+                    <p style="margin-top:8px;">Atua como Guardrail de qualidade antes da exibição ao N1. Valida se a resposta resolve a dúvida sem alucinação (delírio), avalia o nível de confiança e controla o limite de tentativas de reescrita.</p>
+                </div>
+
+                <div class="card card-accent-orange">
+                    <h3>4. Resumo</h3>
+                    <p><span class="badge b-agent">Agente LLM</span></p>
+                    <p style="margin-top:8px;">Acionado exclusivamente quando o chamado escala para N2 ou N3. Consolida o histórico da Caixa de Rastreabilidade em um briefing executivo relatando o pedido e o que o Copilot já tentou.</p>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="card" style="background:#f8fafc;">
+                    <h3>Escalonamento Precoce (N2/N3)</h3>
+                    <p>Incidentes críticos (ex: Erro 500 de API ou Fraude) identificados pelo Classificador pulam a etapa de N1 e seguem direto para o <strong>Agente de Resumo → Atendente N2/N3</strong>.</p>
+                </div>
+                <div class="card" style="background:#f8fafc;">
+                    <h3>Loop Interno de Qualidade</h3>
+                    <p>Respostas com baixa confiança retornam do Auditor para o Redator para ajuste. Ao atingir o limite (3 tentativas), o fluxo é desviado automaticamente para o <strong>Resumo</strong>.</p>
+                </div>
+                <div class="card" style="background:#f8fafc;">
+                    <h3>Bounded Multi-Turn e Rastreabilidade</h3>
+                    <p>Todos os componentes gravam seus passos na <strong>Caixa de Rastreabilidade</strong>, permitindo continuar a conversa no mesmo chamado até o limite de turnos antes de escalar.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 4: MAPEAMENTO DE DADOS, MANUAIS E CHUNKING (E1.3)
+    =========================================== -->
+    <section class="slide">
+        <div class="slide-header">
+            <div class="slide-header-left">
+                <span class="tag">Entregável 1.3 — Mapeamento e Engenharia dos Dados</span>
+                <h2>Análise Exploratória, Criação dos Manuais e Estratégia RAG</h2>
+            </div>
+            <div class="slide-header-right">Fontes de Dados e Estratégias de Chunking</div>
+        </div>
+
+        <div class="content-body">
+            <div class="section-subtitle">Análise Exploratória</div>
+            <div class="grid-2">
+                <div class="card card-accent-blue">
+                    <h3>Bitext Customer Support Dataset (26.872 registros)</h3>
+                    <ul>
+                        <li><strong>Estrutura e Volume:</strong> Base íntegra sem valores nulos, distribuída em 11 categorias e 27 intenções (~1.000 variações por intenção).</li>
+                        <li><strong>Perfil de Texto:</strong> Perguntas (<code>instruction</code>) curtas com média de 9 palavras e respostas procedurais (<code>response</code>) com média de 105 palavras.</li>
+                        <li><strong>Tratamento:</strong> Descarte da coluna de anotação linguística (<code>flags</code>) e mapeamento dos 391 placeholders dinâmicos (ex: <code>{{Order Number}}</code>, <code>{{Online Company Portal Info}}</code>).</li>
+                    </ul>
+                </div>
+
+                <div class="card card-accent-purple">
+                    <h3>Customer Support Tickets — CRM Dataset (20.000 registros)</h3>
+                    <ul>
+                        <li><strong>Estrutura e Descoberta:</strong> Contém metadados operacionais e 5 categorias (<code>Technical</code>, <code>Billing</code>, <code>Account</code>, <code>General Inquiry</code>, <code>Fraud</code>), mas não possui coluna de resposta/resolução e apresenta uma segunda frase sintética (<em>Lorem Ipsum</em>) nas descrições.</li>
+                        <li><strong>Papel no Sistema e LGPD:</strong> Utilizado como stream de simulação de entrada e teste de escalonamento N2/N3. Descarte de dados pessoais (<code>Customer_Name</code>, <code>Customer_Email</code>, <code>Assigned_Agent</code>) por conformidade com a LGPD e limpeza do ruído textual.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section-subtitle">Criação dos Manuais, Estratégias de Chunking e Operação no RAG</div>
+            <div class="grid-3">
+                <div class="card card-accent-green">
+                    <h3>1ª Fonte: Manuais Oficiais da Empresa</h3>
+                    <p><strong>Criação dos Manuais (<code>kb_official_manuals</code>):</strong> Consolidação das 27 intenções do Bitext em artigos canônicos de procedimentos internos da NexusTech, substituindo placeholders genéricos por dados reais da empresa.</p>
+                    <p style="margin-top:8px;"><strong>Estratégia de Chunking:</strong> Chunking Semântico por Seção Markdown (<code>MarkdownHeaderTextSplitter</code> + <code>RecursiveCharacterTextSplitter</code> de 500 tokens / overlap 50) para preservar a hierarquia completa de títulos e passo a passo.</p>
+                </div>
+
+                <div class="card card-accent-blue">
+                    <h3>2ª Fonte: Histórico de Tickets</h3>
+                    <p><strong>Base de Exemplos (<code>kb_historical_tickets</code>):</strong> Indexação dos pares de pergunta e resposta do dataset Bitext com identificador de referência (<code>BTX-XXXX</code>) para fornecer exemplos práticos de resolução e tom.</p>
+                    <p style="margin-top:8px;"><strong>Estratégia de Chunking:</strong> <em>Record-Level / Parent-Child Chunking</em> (1 registro = 1 unidade atômica). Vetoriza-se a combinação <code>[Categoria + Intenção + Instruction]</code> para match preciso com a dúvida curta do cliente, retornando a <code>Response</code> completa.</p>
+                </div>
+
+                <div class="card card-accent-orange">
+                    <h3>Funcionamento da Busca no RAG</h3>
+                    <p><strong>Consulta em Duas Camadas no PG Vector:</strong></p>
+                    <ul>
+                        <li><strong>1º Passo (Documento Oficial):</strong> A ferramenta RAG filtra pela categoria identificada e busca primeiro em <code>kb_official_manuals</code> para extrair a regra de negócio oficial da empresa.</li>
+                        <li><strong>2º Passo (Complemento com Ticket Antigo):</strong> Caso necessário ou de forma combinada, recupera 1 a 2 tickets históricos de <code>kb_historical_tickets</code> para complementar o contexto do Agente Redator.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 5: STACK TÉCNICO E ESTRUTURA DA API (E1.4)
+    =========================================== -->
+    <section class="slide">
+        <div class="slide-header">
+            <div class="slide-header-left">
+                <span class="tag">Entregável 1.4 — Stack Técnico e Integração</span>
+                <h2>Orquestração com LangGraph e Contratos da API</h2>
+            </div>
+            <div class="slide-header-right">Backend &amp; Orquestração</div>
+        </div>
+
+        <div class="content-body">
+            <div class="card card-accent-blue">
+                <h3>Por que LangGraph?</h3>
+                <div class="grid-2" style="margin-top: 8px;">
+                    <ul>
+                        <li><strong>Suporte Nativo a Ciclos e Grafos (Loops):</strong> Modela o loop de validação entre Redator e Auditor através de nós e arestas condicionais (<code>conditional_edges</code>) de forma matematicamente previsível.</li>
+                        <li><strong>Controle Determinístico e Previsibilidade:</strong> Governança exata das transições entre os 4 agentes e a ferramenta determinística RAG, essencial para cumprir metas rígidas de SLA corporativo.</li>
+                        <li><strong>Gestão de Estado Tipada (StateGraph):</strong> Implementa nativamente a <strong>Caixa de Rastreabilidade</strong> via estruturas tipadas (<code>TypedDict</code>), garantindo isolamento de contexto para que o Auditor avalie apenas o rascunho e os trechos filtrados.</li>
+                    </ul>
+                    <ul>
+                        <li><strong>Prevenção de Loops Infinitos e Custos:</strong> Controle simples por contadores no estado (<code>tentativas_auditor &gt;= 3</code>) que força o desvio automático para o Agente de Resumo, protegendo o consumo de tokens.</li>
+                        <li><strong>Persistência e Resiliência (Checkpointers):</strong> Guarda o estado da conversação a cada passo por <code>session_ticket_id</code>, viabilizando a continuação da conversa e a transição limpa (Handoff) para o atendente N2/N3.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section-subtitle">Estrutura da API</div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 26%;">Endpoint (FastAPI)</th>
+                        <th style="width: 22%;">Público-Alvo</th>
+                        <th style="width: 52%;">Comportamento e Contrato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>POST /chat</code></td>
+                        <td>Usuário Final / Atendente N1</td>
+                        <td>Recebe a mensagem e o <code>session_ticket_id</code>, inicia o fluxo no LangGraph (<code>Classificador → RAG → Redator → Auditor</code>) e devolve a resposta final aprovada ou o aviso de escalonamento para N2/N3.</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /trace/{ticket_id}</code></td>
+                        <td>Painel de Técnicos (N2/N3) e Admin</td>
+                        <td>Consulta o Checkpointer e devolve o registro completo da Caixa de Rastreabilidade (categoria detectada, <code>documentos_id</code> consultados pelo RAG, tentativas do auditor e <code>resumo_handoff</code>).</td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /ingest</code></td>
+                        <td>Administradores</td>
+                        <td>Restrito à manutenção da base de conhecimento. Permite carregar novos ficheiros (CSVs ou manuais) para o pipeline de processamento, chunking e atualização do PG Vector.</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /tickets/{ticket_id}/status</code></td>
+                        <td>Frontend (Polling)</td>
+                        <td><em>(Opcional)</em> Consulta rápida apenas do estado atual do chamado (em atendimento, resolvido em N1 ou escalonado para N2/N3) sem carregar todo o histórico.</td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /tickets/{ticket_id}/handoff</code></td>
+                        <td>Usuário Final / Atendente N1</td>
+                        <td><em>(Opcional)</em> Força manualmente a transição imediata de um ticket para o suporte humano (acionando o Agente de Resumo) caso o cliente solicite falar com uma pessoa.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+
+<!-- Barra de Navegação Inferior -->
+<div class="nav-bar">
+    <div class="nav-info">
+        <span><strong>NexusTech Support Copilot</strong> — Apresentação Entrega E1</span>
+        <span>|</span>
+        <span>Setas <strong>← / →</strong> mudam o slide • Setas <strong>↑ / ↓</strong> ou scroll rolam a página</span>
+    </div>
+    <div class="nav-controls">
+        <button class="nav-btn" onclick="changeSlide(-1)">← Anterior</button>
+        <span class="progress-indicator" id="slide-counter">1 / 5</span>
+        <button class="nav-btn" onclick="changeSlide(1)">Próximo →</button>
+    </div>
+</div>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis'
+        }
+    });
+
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('slide-counter');
+    let mermaidRendered = false;
+
+    async function showSlide(index) {
+        if (index < 0) index = 0;
+        if (index >= slides.length) index = slides.length - 1;
+        
+        slides.forEach((slide, i) => {
+            slide.classList.toggle('active', i === index);
+            if (i === index) {
+                slide.scrollTop = 0;
+            }
+        });
+        
+        currentSlide = index;
+        counter.textContent = `${currentSlide + 1} / ${slides.length}`;
+
+        // Renderiza o diagrama Mermaid assim que o Slide 3 fica visível
+        if (currentSlide === 2 && !mermaidRendered) {
+            await mermaid.run({
+                querySelector: '.mermaid'
+            });
+            mermaidRendered = true;
+        }
+    }
+
+    function changeSlide(step) {
+        showSlide(currentSlide + step);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+            e.preventDefault();
+            changeSlide(1);
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+            e.preventDefault();
+            changeSlide(-1);
+        }
+    });
+</script>
+
+</body>
+</html>
