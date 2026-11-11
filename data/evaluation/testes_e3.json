@@ -1,0 +1,62 @@
+[
+  {
+    "id_teste": "TC-001",
+    "categoria": "Fraud",
+    "descricao": "Cliente relata invasão pela 1ª vez (em inglês) - Deve orientar bloqueio N1",
+    "pergunta": "My account was hacked! Someone made transactions I didn't authorize. Block it now!",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "MAN-FRAU-001-SEC-03"
+    }
+  },
+  {
+    "id_teste": "TC-002",
+    "categoria": "Fraud",
+    "descricao": "Cliente já tentou N1 mas botão não aparece mesmo com e-mail validado - Deve escalar para N2",
+    "pergunta": "Eu tentei seguir os passos para bloquear minha conta invadida, mas o botão 'Bloquear Conta Imediatamente' não aparece no meu painel de jeito nenhum, e meu e-mail já tá validado!",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "MAN-FRAU-001-SEC-03"
+    }
+  },
+  {
+    "id_teste": "TC-003",
+    "categoria": "Technical",
+    "descricao": "Dashboard travado na tela de carregamento (em inglês) - Deve orientar limpeza de cache N1",
+    "pergunta": "The dashboard is not loading any data, just a spinning wheel.",
+    "esperado": {
+      "nivel_escalonamento": "N1",
+      "chunk_id": "MAN-TECH-001-SEC-03"
+    }
+  },
+  {
+    "id_teste": "TC-004",
+    "categoria": "Billing",
+    "descricao": "Cobrança duplicada no cartão (em inglês) - Deve orientar contestação N1",
+    "pergunta": "I was charged twice for the same month. Here is the receipt.",
+    "esperado": {
+      "nivel_escalonamento": "N1",
+      "chunk_id": "MAN-BILL-001-SEC-06"
+    }
+  },
+  {
+    "id_teste": "TC-005",
+    "categoria": "Account",
+    "descricao": "Perda de dispositivo 2FA sem códigos de backup - Deve orientar fluxo ou escalar N2",
+    "pergunta": "Perdi meu celular com o autenticador 2FA e também não tenho mais aqueles códigos de recuperação. Como entro na conta?",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "MAN-ACCO-001-SEC-02"
+    }
+  },
+  {
+    "id_teste": "TC-006",
+    "categoria": "General Inquiry",
+    "descricao": "Dúvida sobre desconto para ONGs (em português) - Resolução direta N1",
+    "pergunta": "Somos uma ONG sem fins lucrativos e queríamos saber se vocês oferecem algum desconto nos planos.",
+    "esperado": {
+      "nivel_escalonamento": "N1",
+      "chunk_id": "MAN-GENE-001-SEC-03"
+    }
+  }
+]
