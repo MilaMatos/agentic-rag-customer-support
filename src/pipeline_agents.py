@@ -171,14 +171,14 @@ class NexusSupportPipeline:
     # -----------------------------------------------------------------
     # NÚCLEO RAG: REDATOR + AUDITOR
     # -----------------------------------------------------------------
-    def _executar_redator_e_auditor(
+
+    def _executar_redator(
         self,
         pergunta_cliente: str,
         chunks: list[dict[str, Any]],
         feedback_anterior: Optional[str] = None,
-    ) -> tuple[dict[str, str], VereditoAuditorSchema]:
-        """Executa Redator e Auditor via CrewAI com parse JSON local"""
-
+    ) -> dict[str, str]:
+        """Instancia o Agente Redator e gera a resposta ao cliente."""
         prompts_red = construir_prompt_redator(
             pergunta_cliente=pergunta_cliente,
             chunks_fatiados=chunks,
@@ -207,11 +207,19 @@ class NexusSupportPipeline:
             verbose=False,
         )
         crew_redator.kickoff()
-        dados_redator = separar_mensagem_e_fonte(task_redacao.output.raw)
+        
+        return separar_mensagem_e_fonte(task_redacao.output.raw)
 
+    def _executar_auditor(
+        self,
+        pergunta_cliente: str,
+        resposta_redator: str,
+        chunks: list[dict[str, Any]],
+    ) -> VereditoAuditorSchema:
+        """Instancia o Agente Auditor e avalia a resposta gerada."""
         prompts_aud = construir_prompt_auditor(
             pergunta_cliente=pergunta_cliente,
-            resposta_redator=dados_redator["texto_completo_auditoria"],
+            resposta_redator=resposta_redator,
             chunks_fatiados=chunks,
         )
 
@@ -238,11 +246,8 @@ class NexusSupportPipeline:
         )
         crew_auditor.kickoff()
 
-        # Parse instantâneo em Python e validação pelo Schema Pydantic
         dict_auditoria = extrair_json_auditoria(task_auditoria.output.raw)
-        veredito_obj = VereditoAuditorSchema(**dict_auditoria)
-
-        return dados_redator, veredito_obj
+        return VereditoAuditorSchema(**dict_auditoria)
 
     # -----------------------------------------------------------------
     # PONTO DE EXTENSÃO 2: AGENTE DE RESUMO / HANDOFF
@@ -308,11 +313,19 @@ class NexusSupportPipeline:
 
         for tentativa in range(1, MAX_TENTATIVAS_CORRECAO + 2):
             tentativas_realizadas = tentativa
-            dados_redator, veredito = self._executar_redator_e_auditor(
+
+            dados_redator = self._executar_redator(
                 pergunta_cliente=pergunta_cliente,
                 chunks=chunks,
                 feedback_anterior=feedback,
             )
+            
+            veredito = self._executar_auditor(
+                pergunta_cliente=pergunta_cliente,
+                resposta_redator=dados_redator["texto_completo_auditoria"],
+                chunks=chunks,
+            )
+            
             if veredito.aprovado_para_envio:
                 break
             feedback = veredito.feedback_correcao
