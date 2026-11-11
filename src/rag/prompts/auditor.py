@@ -36,6 +36,9 @@ def construir_prompt_auditor(
     resposta_redator: str,
     chunks_fatiados: list[dict[str, Any]],
 ) -> dict[str, str]:
+    """
+    Monta o system e user prompt do Auditor com diretrizes N1 e regras de escalonamento
+    """
     if not chunks_fatiados:
         regras_n1 = "[FORA_DE_ESCOPO] Sem diretrizes N1."
         regras_escalonamento = "[FORA_DE_ESCOPO] Qualquer caso sem cobertura na base deve ser escalonado para N2."
@@ -61,6 +64,9 @@ def construir_prompt_auditor(
 
 
 def extrair_json_auditoria(resposta_llm: str) -> dict[str, Any]:
+    """
+    Limpa marcações Markdown/think e converte a resposta bruta do Auditor em dict
+    """
     texto = re.sub(r"<think>.*?</think>", "", resposta_llm, flags=re.DOTALL).strip()
     texto = re.sub(r"^```(?:json)?\s*|\s*```$", "", texto, flags=re.IGNORECASE).strip()
     match = re.search(r"\{.*\}", texto, flags=re.DOTALL)

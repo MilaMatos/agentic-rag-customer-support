@@ -26,6 +26,9 @@ def construir_prompt_redator(
     chunks_fatiados: list[dict[str, Any]],
     feedback_auditor: Optional[str] = None,
 ) -> dict[str, str]:
+    """
+    Monta o system e user prompt do Redator com chunks RAG e feedback opcional
+    """
     if not chunks_fatiados:
         contexto_str = (
             "[Chunk_ID: FORA_DE_ESCOPO]\n"

@@ -14,7 +14,7 @@ DB_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://admin:adminpassword@localhost:5432/nexus_knowledge",
 )
-API_KEY = os.getenv("NVIDIA_API_KEY") or os.getenv("OPENAI_API_KEY")
+API_KEY = os.getenv("NVIDIA_API_KEY")
 BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
 MODEL_NAME = "nvidia/nemotron-3.5-embed-1b"
 COLLECTION_NAME = "nexus_knowledge_base"
@@ -100,6 +100,9 @@ class NexusRetriever:
         category_filter: Optional[str] = None,
         min_similarity: float = 0.30,
     ) -> list[dict[str, Any]]:
+        """
+        Realiza busca vetorial filtrada por categoria e aplica nota de corte de similaridade
+        """
         filtro = {"category": category_filter} if category_filter else None
         resultados = self.vector_store.similarity_search_with_score(
             query=query, k=k, filter=filtro

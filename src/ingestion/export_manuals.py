@@ -3,11 +3,9 @@ import json
 import re
 from pathlib import Path
 
-
-# Diretórios do projeto
-BASE_DIR = Path(__file__).resolve().parent
-INPUT_DIR = BASE_DIR / "data" / "chunks"
-OUTPUT_DIR = BASE_DIR / "data" / "manuals"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+INPUT_DIR = PROJECT_ROOT / "data" / "knowledge_base" / "json"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "manuals"
 
 
 def normalizar_nome(nome: str) -> str:
@@ -19,10 +17,11 @@ def normalizar_nome(nome: str) -> str:
 
 
 def exportar_manuais():
-    # Criar diretório de saída caso não exista
+    """
+    Converte os manuais sintéticos de JSON para arquivos Markdown (.md) legíveis
+    """
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Localizar todos os documentos de conhecimento
     arquivos_json = sorted(
         INPUT_DIR.glob("base_conhecimento_*.json")
     )
