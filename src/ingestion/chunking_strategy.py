@@ -6,7 +6,7 @@ from pathlib import Path
 
 load_dotenv()
 
-chave_nvidia = os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY")
+chave_nvidia = os.getenv("NVIDIA_API_KEY")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 JSON_DIR = PROJECT_ROOT / "data" / "knowledge_base" / "json"
@@ -82,6 +82,9 @@ sintetizador = Agent(
 )
 
 def gerar_manuais(output_dir: str = None):
+    """
+    Gera os manuais sintéticos por categoria e subcategoria
+    """
     if output_dir is None:
         output_dir = str(JSON_DIR)
     os.makedirs(output_dir, exist_ok=True)

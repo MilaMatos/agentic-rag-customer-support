@@ -57,6 +57,9 @@ def limpar_texto(texto):
     return texto.strip()
 
 def limpar_dados_tickets(input_path: str, output_path: str):
+    """
+    Higieniza o CSV bruto, remove PII, valida categorias e exporta tickets limpos
+    """
     print("Carregando dataset bruto")
     df = pd.read_csv(input_path)
     total_original = len(df)

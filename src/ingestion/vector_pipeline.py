@@ -94,6 +94,7 @@ def normalizar_db_url(url: str) -> str:
 
 
 def validar_configuracoes() -> None:
+    """Verifica se as variáveis de ambiente obrigatórias estão carregadas"""
     if not API_KEY:
         raise RuntimeError(
             "NVIDIA_API_KEY nao encontrada. Verifique o arquivo .env."
@@ -107,6 +108,7 @@ def validar_configuracoes() -> None:
 
 
 def validar_dimensao(vetor: list[float], identificador: str) -> None:
+    """Garante que o vetor retornado possui a dimensão esperada pelo banco (2048)"""
     if len(vetor) != EXPECTED_EMBEDDING_DIMENSION:
         raise RuntimeError(
             f"Dimensao inesperada no chunk {identificador}: "
@@ -264,6 +266,7 @@ def validar_modelo(embeddings: NvidiaNimEmbeddings) -> None:
 def carregar_e_fatiar_manuais(
     diretorio_manuais: str,
 ) -> list[Document]:
+    """Lê os manuais JSON e divide o conteúdo por seção"""
     print("\n2. Fatiando Manuais (Section-Level Chunking)...")
 
     pasta = Path(diretorio_manuais)
@@ -406,6 +409,7 @@ def gerar_embeddings_individuais(
     documentos: list[Document],
     embeddings: NvidiaNimEmbeddings,
 ) -> list[list[float]]:
+    """Gera os vetores de cada chunk individualmente"""
     print("\n3. Gerando embeddings individuais...")
 
     vetores: list[list[float]] = []
@@ -455,6 +459,9 @@ def armazenar_no_pgvector(
     vetores: list[list[float]],
     embeddings: NvidiaNimEmbeddings,
 ) -> PGVector:
+    """
+    Insere os documentos e vetores calculados no PostgreSQL/PGVector em lotes
+    """
     print("\n4. Conectando ao PostgreSQL (pgvector)...")
 
     if len(documentos) != len(vetores):
@@ -522,6 +529,7 @@ def testar_recuperacao(
     pergunta: str = TEST_QUERY,
     quantidade: int = 3,
 ) -> None:
+    """Executa uma query de validação no PGVector após a ingestão"""
     print("\n5. Testando busca semantica no PGVector...")
 
     print(f"   Query: {pergunta}")
@@ -563,6 +571,9 @@ def testar_recuperacao(
 # ============================================================
 
 def processar_e_injetar_vetores() -> None:
+    """
+    Orquestra o pipeline completo de criação e população do banco vetorial
+    """
     validar_configuracoes()
 
     print("=" * 65)
