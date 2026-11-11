@@ -23,12 +23,61 @@ O sistema, desenhado para operar no padrão de chat contínuo com limite de tent
 
 ---
 
+## 🚀 Como Executar o Projeto
+
+Para testar o pipeline RAG Multi-Agente localmente, siga os passos abaixo. Certifique-se de ter o **Docker** (para o banco vetorial) e o **Python 3.10+** instalados na sua máquina.
+
+### 1. Configuração do Ambiente
+Clone o repositório e crie um ambiente virtual para isolar as dependências:
+```bash
+# Crie o ambiente virtual
+python -m venv venv
+
+# Ative o ambiente (Linux/Mac)
+source venv/bin/activate
+# ou no Windows: venv\Scripts\activate
+
+# Instale as dependências
+pip install -r requirements.txt
+```
+
+### 2. Variáveis de Ambiente
+Crie um arquivo `.env` na raiz do projeto contendo suas chaves de API e a string de conexão do banco de dados:
+```env
+NVIDIA_API_KEY="sua_chave_aqui"
+NVIDIA_BASE_URL="https://integrate.api.nvidia.com/v1"
+DATABASE_URL="postgresql+psycopg://admin:adminpassword@localhost:5432/nexus_knowledge"
+```
+
+### 3. Subir o Banco de Dados (PGVector)
+Inicie o container do PostgreSQL com a extensão vetorial em segundo plano:
+```bash
+docker-compose up -d
+```
+
+### 4. Ingestão de Dados (Knowledge Base)
+Antes de rodar os agentes, popule o banco de dados vetorial com os manuais operacionais da NexusTech:
+```bash
+python -m src.ingestion.vector_pipeline
+```
+
+### 5. Executar a Bateria de Testes do RAG Multi-Agente
+Execute o orquestrador CrewAI para processar o dataset de avaliação (`testes_e3.json`). O script fará a busca vetorial, executará o Agente Redator e acionará o Agente Auditor:
+```bash
+python -m src.pipeline_agents
+```
+*(Os resultados da execução, contendo as métricas de acerto e o JSON de rastreabilidade, serão salvos automaticamente na pasta `logs/`).*
+
+---
+
 ## 📂 Estrutura Atual do Repositório
 
 ```text
 nexustech-support-copilot/
 ├── data/                                 # Datasets e Base de Conhecimento
 │   ├── cleaned/                          # Dados tabulares processados (ex: tickets.csv)
+│   ├── evaluation/                       # Datasets de teste e avaliação (Gabaritos)
+│   │   └── testes_e3.json                # Bateria de perguntas E3
 │   └── knowledge_base/                   # Chunks (json) e Manuais sintéticos (manuals)
 ├── docs/                                 # Documentação do projeto por entrega
 │   ├── E1/                               # Entrega 1: Planejamento
@@ -40,18 +89,27 @@ nexustech-support-copilot/
 │       ├── apresentacao_E2.html
 │       ├── estrategia_chunking.md
 │       └── pesquisa_dados_kb.md
+├── logs/                                 # Logs de execução e rastreabilidade (Gerados automaticamente)
+├── sandbox/                              # Scripts de rascunho e testes isolados (Ignorado no git)
 ├── src/
-│   └── ingestion/                        # Scripts de processamento e ingestão
-│       ├── chunking_strategy.py          # Lógica de particionamento (Chunking)
-│       ├── export_manuals.py             # Geração de manuais
-│       ├── ingestion_pipeline.py         # Pipeline de preparação dos dados
-│       └── vector_pipeline.py            # Ingestão vetorial no PostgreSQL/pgvector
+│   ├── ingestion/                        # Scripts de processamento e ingestão
+│   │   ├── chunking_strategy.py          # Lógica de particionamento (Chunking)
+│   │   ├── export_manuals.py             # Geração de manuais
+│   │   ├── ingestion_pipeline.py         # Pipeline de preparação dos dados
+│   │   └── vector_pipeline.py            # Ingestão vetorial no PostgreSQL/pgvector
+│   ├── rag/                              # Pipeline RAG Multi-Agente
+│   │   ├── prompts/                      # Templates de sistema e guardrails
+│   │   │   ├── auditor.py
+│   │   │   └── redactor.py
+│   │   └── retriever.py                  # Busca semântica e fatiamento no PGVector
+│   └── pipeline_agents.py                # Orquestrador CrewAI (Redator + Auditor)
 ├── .env                                  # Variáveis de ambiente (ignorado no git)
 ├── .gitignore
 ├── docker-compose.yml                    # Setup de infra (PostgreSQL + pgvector)
 ├── requirements.txt                      # Dependências Python
 └── README.md                             # Documentação principal e roadmap
 ```
+---
 
 ## 📅 Cronograma e Status das Entregas (Backlog)
 
