@@ -1,4 +1,3 @@
-import re
 from typing import Any, Optional
 
 REDATOR_SYSTEM_PROMPT = """Você é um especialista de atendimento do suporte da NexusTech Solutions.
@@ -11,10 +10,10 @@ REGRAS DE OURO (GUARDRAILS):
    - NUNCA assuma valores em Reais (R$), números de transação ou locais que o cliente não tenha dito na mensagem dele (valores na documentação são apenas tetos de política ou exemplos).
 3. COMO AGIR EM AUTOATENDIMENTO vs. TRANSFERÊNCIA PARA ESPECIALISTA:
    - CASO A (O cliente ainda pode resolver via autoatendimento no painel): Acolha o cliente e explique claramente o passo a passo de <DIRETRIZES_DE_AUTOATENDIMENTO>. Mencione apenas os tempos de processamento automático do sistema que constam no passo a passo (ex: bloqueio em 5 minutos, atualização em 15 minutos). Ao final, diga apenas para avisar caso o problema persista após tentar os passos. NÃO fale em transferir o chamado agora.
-   - CASO B (A mensagem do cliente JÁ SE ENQUADRA nos <GATILHOS_DE_ESCALONAMENTO_INTERNO> — ex: o cliente já tentou os passos e falhou, o botão não aparece, ou perdeu o celular 2FA e não tem códigos de recuperação):
+   - CASO B (A mensagem do cliente JÁ SE ENQUADRA nos <GATILHOS_DE_ESCALONAMENTO_INTERNO> ou está FORA_DE_ESCOPO):
      * NÃO mande o cliente repetir passos que já falharam ou entrar em telas que ele está bloqueado de acessar.
      * Escreva uma mensagem curta e tranquilizadora informando apenas que, devido a essa condição específica, você já está encaminhando o atendimento diretamente para um **especialista da nossa equipe dedicada** dar sequência na solução.
-     * PROIBIDO USAR JARGÃO INTERNO OU PRAZOS DE FILA HUMANA: Nunca use os termos "N1", "N2", "N3", "Backoffice" ou "Engenharia" para o cliente, e NUNCA prometa prazos de retorno da equipe humana (como "em até 2 horas" ou "4 horas"). O sistema fará o roteamento automático do ticket.
+     * PROIBIDO USAR JARGÃO INTERNO OU PRAZOS DE FILA HUMANA: Nunca use os termos "N1", "N2", "N3", "Backoffice" ou "Engenharia" para o cliente, e NUNCA prometa prazos de retorno da equipe humana (como "em até 2 horas" ou "4 horas").
 4. ESCOPO: Nunca prometa ler logs de servidor ou acessar bancos de dados diretamente.
 5. IDIOMA: Responda sempre em Português do Brasil.
 6. TAG DE RASTREABILIDADE INTERNA: Na última linha da resposta, pule uma linha e escreva EXATAMENTE: `[[FONTE: Chunk_ID]]` (ex: `[[FONTE: MAN-FRAU-001-SEC-03]]`). Se <BASE_DE_CONHECIMENTO> estiver vazia, use `[[FONTE: FORA_DE_ESCOPO]]`.
@@ -26,9 +25,7 @@ def construir_prompt_redator(
     chunks_fatiados: list[dict[str, Any]],
     feedback_auditor: Optional[str] = None,
 ) -> dict[str, str]:
-    """
-    Monta o system e user prompt do Redator com chunks RAG e feedback opcional
-    """
+    """Monta o system e user prompt do Redator com chunks RAG e feedback opcional."""
     if not chunks_fatiados:
         contexto_str = (
             "[Chunk_ID: FORA_DE_ESCOPO]\n"
@@ -64,19 +61,4 @@ def construir_prompt_redator(
     return {
         "system_prompt": REDATOR_SYSTEM_PROMPT,
         "user_prompt": user_prompt,
-    }
-
-
-def separar_mensagem_e_fonte(resposta_bruta: str) -> dict[str, str]:
-    """Separa o texto limpo que vai para o cliente da tag técnica de fonte."""
-    texto = re.sub(r"<think>.*?</think>", "", resposta_bruta, flags=re.DOTALL).strip()
-    match_fonte = re.search(r"\[\[FONTE:\s*([^\]]+)\]\]", texto, flags=re.IGNORECASE)
-    fonte = match_fonte.group(1).strip() if match_fonte else "NÃO_CITADA"
-
-    mensagem_limpa = re.sub(r"\[\[FONTE:\s*[^\]]+\]\]", "", texto, flags=re.IGNORECASE).strip()
-
-    return {
-        "mensagem_cliente": mensagem_limpa,
-        "fonte_citada": fonte,
-        "texto_completo_auditoria": texto,
     }

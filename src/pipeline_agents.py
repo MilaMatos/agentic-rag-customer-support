@@ -1,33 +1,26 @@
 import os
+
+os.environ["OTEL_SDK_DISABLED"] = "true"
+os.environ["CREWAI_DISABLE_TELEMETRY"] = "true"
+
 import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Literal
-import logging
-
-from dotenv import load_dotenv
-from pydantic import BaseModel, Field
-from crewai import Agent, Task, Crew, Process, LLM
+from typing import Any, Optional
 
 from src.rag.retriever import NexusRetriever
-from src.rag.prompts.redactor import construir_prompt_redator, separar_mensagem_e_fonte
-from src.rag.prompts.auditor import construir_prompt_auditor, extrair_json_auditoria
-from src.rag.prompts.classifier import run_classification
-from src.rag.prompts.summarizer import run_summarization
-
-load_dotenv()
-
-# Desativa telemetria externa do CrewAI que adiciona latência a cada kickoff()
-os.environ["OTEL_SDK_DISABLED"] = "true"
-os.environ["CREWAI_DISABLE_TELEMETRY"] = "true"
-
-# Silencia os avisos de contagem aproximada de tokens do CrewAI/LiteLLM
-logging.getLogger("crewai.llms.base_llm").setLevel(logging.ERROR)
-logging.getLogger("LiteLLM").setLevel(logging.ERROR)
-
-API_KEY = os.getenv("NVIDIA_API_KEY")
-BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+from src.agents.agent_classifier import AgenteClassificador
+from src.agents.agent_redactor import AgenteRedatorN1
+from src.agents.agent_auditor import AgenteAuditorQualidade
+from src.agents.agent_summarizer import AgenteResumo
+from src.agents.schemas import (
+    TicketClassification,
+    ContextoRAGSchema,
+    AtendimentoRedatorSchema,
+    VereditoAuditorSchema,
+    CaixaRastreabilidadeSchema,
+)
 
 MAX_TENTATIVAS_CORRECAO = 2
 MIN_SIMILARITY = 0.30
@@ -36,282 +29,44 @@ ARQUIVO_TESTES = Path("data/evaluation/testes_e3.json")
 PASTA_RASTREABILIDADE = Path("logs/rastreabilidade")
 PASTA_RASTREABILIDADE.mkdir(parents=True, exist_ok=True)
 
-# =====================================================================
-# SCHEMAS DE CONTRATO ENTRE AGENTES E CAIXA DE RASTREABILIDADE
-# =====================================================================
-
-class TriagemClassificadorSchema(BaseModel):
-    """Contrato de saída do Agente 1 (Classificador)."""
-    categoria: Literal["Technical", "Billing", "Account", "Fraud", "General Inquiry"] = Field(
-        description="Categoria oficial da base de conhecimento."
-    )
-    prioridade: Literal["Baixa", "Media", "Alta", "Critica"] = Field(
-        default="Media", description="Nível de prioridade do chamado."
-    )
-    nivel_inicial: Literal["N1", "N2", "N3"] = Field(
-        default="N1", description="Hipótese de nível na triagem inicial."
-    )
-    justificativa_triagem: str = Field(
-        default="", description="Motivo resumido da classificação inicial."
-    )
-
-
-class ContextoRAGSchema(BaseModel):
-    """Dados do chunk recuperado no PGVector salvos para rastreabilidade."""
-    chunk_id: str = Field(description="ID do chunk recuperado ou FORA_DE_ESCOPO.")
-    subcategoria: str = Field(description="Subcategoria do manual operacional.")
-    score_similaridade: float = Field(description="Score de similaridade de cosseno (0.0 a 1.0).")
-    regra_escalonamento_aplicada: str = Field(description="Trecho da regra N2/N3 do manual.")
-
-
-class AtendimentoRedatorSchema(BaseModel):
-    """Dados consolidados gerados pelo Agente 2 (Redator N1)."""
-    mensagem_enviada_ao_cliente: str = Field(description="Texto limpo enviado ao cliente no chat.")
-    fonte_tecnica_citada: str = Field(description="Chunk_ID extraído da tag [[FONTE: ...]].")
-    tentativas_redacao: int = Field(description="Número de tentativas até aprovação do Auditor.")
-
-
-class VereditoAuditorSchema(BaseModel):
-    analise_raciocinio: str = Field(description="1 frase explicando se respeitou o manual.")
-    aprovado_para_envio: bool = Field(description="True se aprovado, False se precisar de correção pelo Redator.")
-    redator_alucinou: bool = Field(description="True se o Redator inventou regras, prazos ou valores.")
-    citou_fonte: bool = Field(description="True se incluiu a tag [[FONTE: ...]] ao final.")
-    requer_escalonamento: bool = Field(description="True se o ticket precisa ser transferido para um especialista.")
-    feedback_correcao: str = Field(default="", description="Instrução de correção para o Redator caso reprovado.")
-
-class ResumoHandoffSchema(BaseModel):
-    """Contrato de saída do Agente 4 (Resumo de Handoff para N2/N3)."""
-    nivel_destino: Literal["N2", "N3"] = Field(description="Nível para o qual o ticket foi escalado.")
-    fila_responsavel: str = Field(description="Equipe de destino (ex: Backoffice Financeiro, Engenharia).")
-    resumo_executivo: str = Field(description="Síntese clara do problema do cliente.")
-    acoes_ja_realizadas: str = Field(description="O que já foi validado ou tentado no N1.")
-    motivo_tecnico_escalonamento: str = Field(description="Gatilho do manual que exigiu o escalonamento.")
-    acao_recomendada_proximo_nivel: str = Field(description="Próximo passo técnico para o especialista.")
-
-
-class CaixaRastreabilidadeSchema(BaseModel):
-    """Envelope mestre do ticket contendo todo o histórico, decisões e telemetria da pipeline."""
-    ticket_id: str
-    timestamp: str
-    pergunta_cliente: str
-    triagem_inicial: TriagemClassificadorSchema
-    rag_contexto: ContextoRAGSchema
-    atendimento_n1: AtendimentoRedatorSchema
-    auditoria: VereditoAuditorSchema
-    requer_handoff_humano: bool
-    resumo_handoff_n2_n3: Optional[ResumoHandoffSchema] = None
-    telemetria_tempos_s: dict[str, float]
-
-# =====================================================================
-# PIPELINE OFICIAL CREWAI
-# =====================================================================
 
 class NexusSupportPipeline:
-    """Orquestrador Multi-Agente RAG do NexusTech Support Copilot."""
+    """Orquestrador Multi-Agente RAG do NexusTech Support Copilot"""
 
     def __init__(self):
-        if not API_KEY:
-            raise ValueError("NVIDIA_API_KEY não encontrada no .env")
-
         self.retriever = NexusRetriever()
+        self.classificador = AgenteClassificador()
+        self.redator = AgenteRedatorN1()
+        self.auditor = AgenteAuditorQualidade()
+        self.resumidor = AgenteResumo()
 
-        self.llm_redator = LLM(
-            model="nvidia/nemotron-3.5-lightning-30b-a3b",
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.1,
-            max_tokens=1024,
-            context_window_size=8192,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
-
-        self.llm_auditor = LLM(
-            model="nvidia/nemotron-3.5-lightning-30b-a3b",
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.0,
-            max_tokens=1024,
-            context_window_size=8192,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
-
-    # -----------------------------------------------------------------
-    # PONTO DE EXTENSÃO 1: AGENTE CLASSIFICADOR
-    # -----------------------------------------------------------------
     def _obter_classificacao(
         self,
         pergunta_cliente: str,
         classificacao_externa: Optional[dict[str, Any]] = None,
-    ) -> TriagemClassificadorSchema:
-        try:
-            if classificacao_externa:
-                return TriagemClassificadorSchema(**classificacao_externa)
-
-            resultado = run_classification(pergunta_cliente)
-
-            if resultado.json_dict:
-                dados = resultado.json_dict
-            elif resultado.pydantic:
-                dados = resultado.pydantic.model_dump()
-            else:
-                texto_limpo = resultado.raw.replace('```json', '').replace('```', '').strip()
-                import json
-                dados = json.loads(texto_limpo)
-
-            dados_finais = {
-                "categoria": dados.get("categoria") or dados.get("category", "General Inquiry"),
-                "prioridade": dados.get("prioridade") or dados.get("priority", "Media"),
-                "nivel_inicial": dados.get("nivel_inicial") or dados.get("initial_level", "N1"),
-                "justificativa_triagem": dados.get("justificativa_triagem") or dados.get("justification", "Sem justificativa")
-            }
-
-            return TriagemClassificadorSchema(**dados_finais)
-
-        except Exception as e:
-            # Fallback global: se qualquer coisa falhar (CrewAI, Pydantic ou chaves inglesas), a pipeline não para.
-            fallback = {
-                "categoria": "General Inquiry",
-                "prioridade": "Media",
-                "nivel_inicial": "N1",
-                "justificativa_triagem": "Erro no parser, fallback seguro ativado."
-            }
-            return TriagemClassificadorSchema(**fallback)
-    # -----------------------------------------------------------------
-    # NÚCLEO RAG: REDATOR + AUDITOR
-    # -----------------------------------------------------------------
-
-    def _executar_redator(
-        self,
-        pergunta_cliente: str,
-        chunks: list[dict[str, Any]],
-        feedback_anterior: Optional[str] = None,
-    ) -> dict[str, str]:
-        """Instancia o Agente Redator e gera a resposta ao cliente."""
-        prompts_red = construir_prompt_redator(
-            pergunta_cliente=pergunta_cliente,
-            chunks_fatiados=chunks,
-            feedback_auditor=feedback_anterior,
-        )
-
-        agente_redator = Agent(
-            role="Especialista de Atendimento (Redator)",
-            goal="Produzir resposta clara e fiel à base de conhecimento para o cliente.",
-            backstory=prompts_red["system_prompt"],
-            llm=self.llm_redator,
-            verbose=False,
-            allow_delegation=False,
-        )
-
-        descricao_final = prompts_red["user_prompt"]
-        if feedback_anterior:
-            descricao_final += f"\n\nATENÇÃO (TENTATIVA ANTERIOR REPROVADA PELO AUDITOR):\n{feedback_anterior}"
-
-        task_redacao = Task(
-            description=descricao_final,
-            expected_output="Resposta ao cliente contendo a tag [[FONTE: Chunk_ID]] na última linha.",
-            agent=agente_redator,
-        )
-
-        crew_redator = Crew(
-            agents=[agente_redator],
-            tasks=[task_redacao],
-            process=Process.sequential,
-            verbose=False,
-            memory=False, 
-            cache=False  
-        )
-        crew_redator.kickoff()
-        
-        return separar_mensagem_e_fonte(task_redacao.output.raw)
-
-    def _executar_auditor(
-        self,
-        pergunta_cliente: str,
-        resposta_redator: str,
-        chunks: list[dict[str, Any]],
-    ) -> VereditoAuditorSchema:
-        """Instancia o Agente Auditor e avalia a resposta gerada."""
-        prompts_aud = construir_prompt_auditor(
-            pergunta_cliente=pergunta_cliente,
-            resposta_redator=resposta_redator,
-            chunks_fatiados=chunks,
-        )
-
-        agente_auditor = Agent(
-            role="Auditor de Qualidade e Roteamento de Tickets",
-            goal="Auditar fidelidade da resposta e definir o nível atual do chamado (N1, N2 ou N3).",
-            backstory=prompts_aud["system_prompt"],
-            llm=self.llm_auditor,
-            verbose=False,
-            allow_delegation=False,
-        )
-
-        task_auditoria = Task(
-            description=prompts_aud["user_prompt"],
-            expected_output="JSON válido contendo analise_raciocinio, aprovado_para_envio, redator_alucinou, citou_fonte, nivel_escalonamento e feedback_correcao.",
-            agent=agente_auditor,
-        )
-
-        crew_auditor = Crew(
-            agents=[agente_auditor],
-            tasks=[task_auditoria],
-            process=Process.sequential,
-            verbose=False,
-        )
-        crew_auditor.kickoff()
-
-        dict_auditoria = extrair_json_auditoria(task_auditoria.output.raw)
-        return VereditoAuditorSchema(**dict_auditoria)
-
-    # -----------------------------------------------------------------
-    # PONTO DE EXTENSÃO 2: AGENTE DE RESUMO / HANDOFF
-    # -----------------------------------------------------------------
-    def _executar_resumo_handoff(   
-        self,
-        caixa_rastreabilidade: CaixaRastreabilidadeSchema,
-    ) -> Optional[ResumoHandoffSchema]:
-        """
-        Recebe a Caixa de Rastreabilidade pronta caso o ticket seja N2 ou N3.
-        """
-        mensagem = caixa_rastreabilidade.atendimento_n1.mensagem_enviada_ao_cliente
-        
-        if mensagem:
-            resultado_resumo = run_summarization(mensagem)
-            
-            nivel_classificador = caixa_rastreabilidade.triagem_inicial.nivel_inicial
-            nivel_destino = "N2" if nivel_classificador == "N1" else nivel_classificador
-            
-            return ResumoHandoffSchema(
-                nivel_destino=nivel_destino,
-                fila_responsavel=caixa_rastreabilidade.triagem_inicial.categoria,
-                resumo_executivo=resultado_resumo.raw,
-                acoes_ja_realizadas="Triagem automática e resposta gerada via RAG N1.",
-                motivo_tecnico_escalonamento=caixa_rastreabilidade.rag_contexto.regra_escalonamento_aplicada,
-                acao_recomendada_proximo_nivel="Análise técnica detalhada conforme manual."
+    ) -> TicketClassification:
+        """Usa o dict externo (se fornecido para teste isolado) ou aciona o AgenteClassificador"""
+        if classificacao_externa:
+            return TicketClassification(
+                category=classificacao_externa.get("category") or classificacao_externa.get("categoria", "General Inquiry"),
+                priority=classificacao_externa.get("priority") or classificacao_externa.get("prioridade", "Media"),
+                initial_level=classificacao_externa.get("initial_level") or classificacao_externa.get("nivel_inicial", "N1"),
+                triage_justification=classificacao_externa.get("triage_justification") or classificacao_externa.get("justificativa_triagem", ""),
             )
-            
-        return None
-    # -----------------------------------------------------------------
-    # EXECUÇÃO DE UM TICKET
-    # -----------------------------------------------------------------
+        return self.classificador.executar(pergunta_cliente=pergunta_cliente)
+
     def processar_ticket(
         self,
         pergunta_cliente: str,
-        classificacao_externa: dict[str, Any],
+        classificacao_externa: Optional[dict[str, Any]] = None,
+        gerar_resumo: bool = True,
         ticket_id: Optional[str] = None,
     ) -> CaixaRastreabilidadeSchema:
-        """
-        Executa o fluxo completo do ticket e retorna a Caixa de Rastreabilidade
-        """
-
+        """Executa o fluxo completo do ticket e retorna a Caixa de Rastreabilidade"""
         t_inicio_total = time.time()
         id_exec = ticket_id or f"TKT-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-        # 1. Triagem Inicial (vinda do JSON ou do Classificador)
+        # 1. Agente 1: Triagem e Classificação
         t0 = time.time()
         triagem = self._obter_classificacao(pergunta_cliente, classificacao_externa)
         tempo_classificacao = round(time.time() - t0, 3)
@@ -321,7 +76,7 @@ class NexusSupportPipeline:
         chunks = self.retriever.buscar_chunks(
             query=pergunta_cliente,
             k=1,
-            category_filter=triagem.categoria,
+            category_filter=triagem.category,
             min_similarity=MIN_SIMILARITY,
         )
         tempo_rag = round(time.time() - t1, 3)
@@ -336,9 +91,8 @@ class NexusSupportPipeline:
             ),
         )
 
-        # 3. Redator + Auditor com Loop de Autocorreção
-        tempo_total_redator = 0.0
-        tempo_total_auditor = 0.0
+        # 3. Agentes 2 e 3: Redator <-> Auditor com Loop de Autocorreção
+        t2 = time.time()
         feedback = None
         dados_redator: dict[str, str] = {}
         veredito: Optional[VereditoAuditorSchema] = None
@@ -346,31 +100,33 @@ class NexusSupportPipeline:
 
         for tentativa in range(1, MAX_TENTATIVAS_CORRECAO + 2):
             tentativas_realizadas = tentativa
-
-            t_red_inicio = time.time()
-            dados_redator = self._executar_redator(
+            dados_redator = self.redator.executar(
                 pergunta_cliente=pergunta_cliente,
                 chunks=chunks,
                 feedback_anterior=feedback,
             )
-            tempo_total_redator += (time.time() - t_red_inicio)
-            
-            t_aud_inicio = time.time()
-            veredito = self._executar_auditor(
+            veredito = self.auditor.executar(
                 pergunta_cliente=pergunta_cliente,
                 resposta_redator=dados_redator["texto_completo_auditoria"],
                 chunks=chunks,
             )
-            tempo_total_auditor += (time.time() - t_aud_inicio)
-            
             if veredito.aprovado_para_envio:
                 break
             feedback = veredito.feedback_correcao
 
-        requer_handoff = veredito.requer_escalonamento
+        tempo_agentes_rag = round(time.time() - t2, 3)
 
-        # 4. Montagem da Caixa de Rastreabilidade Oficial
-        caixa = CaixaRastreabilidadeSchema(
+        # 4. Agente 4: Resumo Executivo Interno
+        t3 = time.time()
+        resumo_texto = None
+        if gerar_resumo:
+            resumo_texto = self.resumidor.executar(
+                resposta_final_cliente=dados_redator.get("mensagem_cliente", "")
+            )
+        tempo_resumo = round(time.time() - t3, 3)
+
+        # 5. Montagem da Caixa de Rastreabilidade Oficial
+        return CaixaRastreabilidadeSchema(
             ticket_id=id_exec,
             timestamp=datetime.now().astimezone().isoformat(),
             pergunta_cliente=pergunta_cliente,
@@ -382,29 +138,22 @@ class NexusSupportPipeline:
                 tentativas_redacao=tentativas_realizadas,
             ),
             auditoria=veredito,
-            requer_handoff_humano=requer_handoff,
-            resumo_handoff_n2_n3=None,
+            resumo_interno_ticket=resumo_texto,
             telemetria_tempos_s={
                 "classificacao_s": tempo_classificacao,
                 "retriever_pgvector_s": tempo_rag,
-                "redator_s": round(tempo_total_redator, 3), # <- Tempo individual do Redator
-                "auditor_s": round(tempo_total_auditor, 3), # <- Tempo individual do Auditor
+                "redator_e_auditor_s": tempo_agentes_rag,
+                "resumo_s": tempo_resumo,
                 "total_pipeline_s": round(time.time() - t_inicio_total, 3),
             },
         )
 
-        # 5. Aciona o Resumo de Handoff (vazio por enquanto) se for N2 ou N3
-        if caixa.requer_handoff_humano:
-            caixa.resumo_handoff_n2_n3 = self._executar_resumo_handoff(caixa)
 
-        return caixa
-
-
-# =====================================================================
-# EXECUÇÃO A PARTIR DO JSON DE TESTES
-# =====================================================================
-
-def rodar_pipeline_com_json_testes(filtro_id: Optional[str] = None) -> Path:
+def rodar_pipeline_com_json_testes(
+    filtro_id: Optional[str] = None,
+    usar_agente_classificador: bool = True,
+    gerar_resumo: bool = True,
+) -> Path:
     pipeline = NexusSupportPipeline()
 
     with open(ARQUIVO_TESTES, "r", encoding="utf-8") as f:
@@ -416,23 +165,26 @@ def rodar_pipeline_com_json_testes(filtro_id: Optional[str] = None) -> Path:
     caixas_geradas = []
 
     for caso in casos:
-        # Monta o contrato exatamente como o Classificador enviará
-        entrada_classificador = caso.get("classificacao_entrada") or {
-            "categoria": caso["categoria"],
-            "prioridade": caso.get("prioridade", "Alta"),
-            "nivel_inicial": caso.get("nivel_inicial", "N1"),
-            "justificativa_triagem": caso.get("descricao", "Triagem inicial via dataset de testes."),
-        }
+        entrada_mock = None
+        if not usar_agente_classificador:
+            entrada_mock = {
+                "category": caso["categoria"],
+                "priority": caso.get("prioridade", "Alta"),
+                "initial_level": caso.get("nivel_inicial", "N1"),
+                "triage_justification": caso.get("descricao", "Triagem via dataset de testes."),
+            }
 
-        print(f"\nProcessando [{caso['id_teste']}] -> Categoria: {entrada_classificador['categoria']}...")
+        print(f"\nProcessando [{caso['id_teste']}]...")
         caixa = pipeline.processar_ticket(
             pergunta_cliente=caso["pergunta"],
-            classificacao_externa=None,
+            classificacao_externa=entrada_mock,
+            gerar_resumo=gerar_resumo,
             ticket_id=caso["id_teste"],
         )
         caixas_geradas.append(caixa.model_dump())
 
-        print(f" -> Requer Escalonamento: {caixa.auditoria.requer_escalonamento} | Handoff: {caixa.requer_handoff_humano}")
+        print(f" -> Categoria Triagem: {caixa.triagem_inicial.category} (Esperada: {caso['categoria']})")
+        print(f" -> Requer Escalonamento (Auditor): {caixa.auditoria.requer_escalonamento}")
         print(f" -> Tempo Total: {caixa.telemetria_tempos_s['total_pipeline_s']}s")
 
     caminho_saida = PASTA_RASTREABILIDADE / f"rastreabilidade_tickets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
@@ -444,4 +196,5 @@ def rodar_pipeline_com_json_testes(filtro_id: Optional[str] = None) -> Path:
 
 
 if __name__ == "__main__":
-    rodar_pipeline_com_json_testes()
+    # Para rodar os 4 agentes completos de ponta a ponta:
+    rodar_pipeline_com_json_testes(usar_agente_classificador=True, gerar_resumo=True)
