@@ -21,11 +21,11 @@ REGRAS DE ROTEAMENTO E JULGAMENTO:
 
 SAÍDA OBRIGATÓRIA (APENAS JSON VÁLIDO):
 {
-  "analise_raciocinio": "1 frase explicando se a resposta respeitou o manual e o porquê do nível técnico ser N1, N2 ou N3.",
+  "analise_raciocinio": "1 frase explicando se a resposta respeitou o manual.",
   "aprovado_para_envio": true,
   "redator_alucinou": false,
   "citou_fonte": true,
-  "nivel_escalonamento": "N1",
+  "requer_escalonamento": false,
   "feedback_correcao": ""
 }
 """
@@ -71,17 +71,22 @@ def extrair_json_auditoria(resposta_llm: str) -> dict[str, Any]:
     texto = re.sub(r"^```(?:json)?\s*|\s*```$", "", texto, flags=re.IGNORECASE).strip()
     match = re.search(r"\{.*\}", texto, flags=re.DOTALL)
 
+    dados = {}
     if match:
         try:
-            return json.loads(match.group(0))
+            dados = json.loads(match.group(0))
         except json.JSONDecodeError:
             pass
 
+    if "requer_escalonamento" not in dados:
+        nivel_antigo = dados.get("nivel_escalonamento", "N1")
+        dados["requer_escalonamento"] = nivel_antigo in ("N2", "N3")
+
     return {
-        "analise_raciocinio": "Falha ao converter JSON do auditor.",
-        "aprovado_para_envio": False,
-        "redator_alucinou": False,
-        "citou_fonte": False,
-        "nivel_escalonamento": "N1",
-        "feedback_correcao": "Mantenha a resposta fiel ao manual e inclua [[FONTE: Chunk_ID]] ao final.",
+        "analise_raciocinio": dados.get("analise_raciocinio", "Análise não informada pelo auditor."),
+        "aprovado_para_envio": bool(dados.get("aprovado_para_envio", True)),
+        "redator_alucinou": bool(dados.get("redator_alucinou", False)),
+        "citou_fonte": bool(dados.get("citou_fonte", True)),
+        "requer_escalonamento": bool(dados.get("requer_escalonamento", False)),
+        "feedback_correcao": dados.get("feedback_correcao", ""),
     }

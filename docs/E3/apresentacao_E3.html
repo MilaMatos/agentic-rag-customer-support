@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresentação E3 - NexusTech</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+        :root {
+            --primary: #0F172A;
+            --secondary: #1E293B;
+            --accent: #3B82F6;
+            --text-light: #F8FAFC;
+            --text-dark: #334155;
+            --bg-slide: #FFFFFF;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background-color: #CBD5E1;
+            overflow: hidden;
+        }
+
+        .presentation {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            position: absolute;
+            width: 90%;
+            max-width: 1100px;
+            height: 80%;
+            max-height: 650px;
+            background-color: var(--bg-slide);
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.95) translateX(50px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateX(0);
+        }
+
+        .slide.prev {
+            transform: scale(0.95) translateX(-50px);
+        }
+
+        .slide-header {
+            background-color: var(--primary);
+            color: var(--text-light);
+            padding: 1.5rem 3rem;
+            border-bottom: 4px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slide-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .slide-content {
+            padding: 2.5rem 3rem;
+            color: var(--text-dark);
+            flex-grow: 1;
+            overflow-y: auto;
+            font-size: 1.15rem;
+            line-height: 1.6;
+        }
+
+        /* Capa específica */
+        .slide-cover {
+            background-color: var(--primary);
+            color: var(--text-light);
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .slide-cover h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        .slide-cover p {
+            font-size: 1.5rem;
+            color: #94A3B8;
+        }
+
+        /* Elementos de Conteúdo */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .box {
+            background: #F1F5F9;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+        .box h4 {
+            margin: 0 0 1rem 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        .box.warning { border-left-color: #F59E0B; }
+        .box.success { border-left-color: #10B981; }
+        .box.file { border-left-color: #8B5CF6; }
+
+        code {
+            background-color: #E2E8F0;
+            color: #B91C1C;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+
+        ul { margin: 0; padding-left: 1.5rem; }
+        li { margin-bottom: 0.8rem; }
+        strong { color: var(--primary); }
+
+        /* Controles */
+        .controls {
+            position: absolute;
+            bottom: 2rem;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            z-index: 100;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: var(--accent); }
+        button:disabled { background-color: #94A3B8; cursor: not-allowed; }
+
+        .progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background-color: var(--accent);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="presentation">
+        
+        <!-- Slide 1: Capa -->
+        <div class="slide slide-cover active">
+            <h1>Entrega 3 (E3)</h1>
+            <p>Arquitetura, Agentes e Desafios do Pipeline RAG</p>
+        </div>
+
+        <!-- Slide 2: O Classificador -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>1. Agente Classificador</h2>
+                <span>Módulo de Triagem</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div>
+                        <div class="box file">
+                            <h4>Arquivos Relacionados</h4>
+                            <p><code>classifier.py</code><br><code>classification_schema.py</code></p>
+                        </div>
+                        <h4 style="margin-top: 2rem;">Como Funciona:</h4>
+                        <ul>
+                            <li>Lê a dúvida bruta do cliente e classifica via <strong>Zero-Shot</strong>.</li>
+                            <li>Força a saída a um contrato estrito (Pydantic Schema) definindo: <strong>Categoria, Prioridade e Nível Inicial (N1/N2/N3)</strong>.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>Por que fizemos isso?</h4>
+                        <p>Desacoplamos o roteamento do restante do sistema para que o Classificador seja o "dono" da porta lógica.</p>
+                        <p>Isso permite que o banco vetorial (PGVector) receba um <strong>filtro exato de metadado</strong> (ex: buscar apenas manuais de "Fraud"), eliminando ruídos semânticos e impedindo que a IA misture regras de cobrança com problemas técnicos.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: O Redator -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>2. Agente Redator</h2>
+                <span>Módulo de Interação N1</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div>
+                        <div class="box file">
+                            <h4>Arquivo Relacionado</h4>
+                            <p><code>redactor.py</code></p>
+                        </div>
+                        <h4 style="margin-top: 1.5rem;">Como Funciona:</h4>
+                        <ul>
+                            <li>Consome o chunk do PGVector fatiado apenas com as <strong>Diretrizes de Autoatendimento N1</strong>.</li>
+                            <li>Transforma instruções técnicas em texto empático, natural e em Português do Brasil.</li>
+                            <li>Aplica a tag de rastreabilidade <code>[[FONTE: Chunk_ID]]</code> no final de cada mensagem.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>Por que fizemos isso? (Guardrails)</h4>
+                        <p>Adicionamos restrições negativas rigorosas no prompt: ele é <strong>proibido</strong> de gerar JSONs ou códigos, proibido de falar jargões internos (N1/N2/N3) com o cliente, e impedido de inventar valores monetários que não estão na mensagem. Isso cria uma barreira (Context Slicing) para que o cliente não veja as regras de escalonamento internas da empresa.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: O Auditor -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>3. Agente Auditor</h2>
+                <span>Módulo de Governança e Handoff</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div>
+                        <div class="box file">
+                            <h4>Arquivo Relacionado</h4>
+                            <p><code>auditor.py</code></p>
+                        </div>
+                        <h4 style="margin-top: 1.5rem;">Como Funciona:</h4>
+                        <ul>
+                            <li>Atua como <em>LLM-as-a-Judge</em>, rodando com <code>temperature = 0.0</code>.</li>
+                            <li>Avalia se o Redator respeitou o manual, se inventou dados (alucinou), e gera um veredito em JSON.</li>
+                            <li>Pode reprovar a resposta (<code>aprovado_para_envio: false</code>), obrigando o Redator a reescrever.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>Por que fizemos isso?</h4>
+                        <p>Para atuar como uma <strong>camada de compliance</strong>. O Auditor é o único agente que lê o manual de <code>&lt;REGRAS_DE_ESCALONAMENTO_N2_N3&gt;</code> completo. Se ele perceber que o caso do cliente já exige transbordo (ex: perdeu o celular do 2FA), ele aciona a flag <code>requer_escalonamento: true</code>, garantindo que o sistema não force o cliente a repetir passos inúteis.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Orquestração e Resumo -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>4. Orquestrador e Resumo de Transbordo</h2>
+                <span>Pipeline Central</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div>
+                        <div class="box file">
+                            <h4>Arquivos Relacionados</h4>
+                            <p><code>pipeline_agents.py</code><br><code>summarizer.py</code></p>
+                        </div>
+                        <h4 style="margin-top: 1.5rem;">Como Funciona:</h4>
+                        <ul>
+                            <li><strong>Pipeline:</strong> Usa o CrewAI para orquestrar o Classificador, o PGVector e o loop Ator-Crítico (Redator + Auditor) sequencialmente. Embala tudo numa <code>CaixaRastreabilidadeSchema</code>.</li>
+                            <li><strong>Summarizer:</strong> Se o Auditor mandou escalar, ele lê toda a conversa e gera 2 linhas limpas: Ação Tomada e Próximo Passo.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>Por que fizemos isso?</h4>
+                        <p>O <code>pipeline_agents.py</code> garante que a execução seja metrificada (telemetria isolada para cada agente). O <code>summarizer.py</code> existe puramente para otimizar o tempo humano (TTR): o especialista do nível N2 ou N3 não precisará ler textos longos da IA, apenas o resumo executivo, otimizando o fluxo de trabalho corporativo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Dificuldades -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>5. Dificuldades Enfrentadas na E3</h2>
+                <span>Obstáculos e Soluções</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2" style="grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="box warning">
+                        <h4>Loop de Autocorreção (Cache do CrewAI)</h4>
+                        <p><strong>O Problema:</strong> O Redator ficava preso em um loop infinito. Ao ser reprovado pelo Auditor, em vez de repensar, o CrewAI puxava a resposta anterior da memória em cache.</p>
+                        <p style="margin-top: 10px; color: #047857;"><strong>A Solução:</strong> Inserimos <code>memory=False</code> e <code>cache=False</code> no agente, forçando o LLM a recalcular o prompt a cada erro de auditoria.</p>
+                    </div>
+                    <div class="box warning">
+                        <h4>Ajuste de Escalonamento do Agente (N1 para N2)</h4>
+                        <p><strong>O Problema:</strong> O Redator inicialmente tentava resolver tudo no N1 ou omitia o transbordo quando o cliente já relatava falhas prévias.</p>
+                        <p style="margin-top: 10px; color: #047857;"><strong>A Solução:</strong> Serviu como uma escada lógica: ajustamos o prompt para que, caso o N1 falhe ou atinja gatilhos complexos, o agente recomende explicitamente e de forma natural o escalonamento para o N2.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Controle -->
+        <div class="controls">
+            <button id="btnPrev" onclick="mudarSlide(-1)" disabled>Anterior</button>
+            <button id="btnNext" onclick="mudarSlide(1)">Próximo</button>
+        </div>
+
+        <!-- Barra de Progresso -->
+        <div class="progress" id="progressBar" style="width: 16.66%;"></div>
+    </div>
+
+    <script>
+        let slideAtual = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const progressBar = document.getElementById('progressBar');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+
+        function atualizarUI() {
+            // Atualiza visibilidade dos slides
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index === slideAtual) {
+                    slide.classList.add('active');
+                } else if (index < slideAtual) {
+                    slide.classList.add('prev');
+                }
+            });
+
+            // Atualiza barra de progresso
+            const progresso = ((slideAtual + 1) / totalSlides) * 100;
+            progressBar.style.width = progresso + '%';
+
+            // Atualiza botões
+            btnPrev.disabled = slideAtual === 0;
+            btnNext.innerText = slideAtual === totalSlides - 1 ? 'Fim' : 'Próximo';
+            btnNext.disabled = slideAtual === totalSlides - 1;
+        }
+
+        function mudarSlide(direcao) {
+            slideAtual += direcao;
+            if (slideAtual < 0) slideAtual = 0;
+            if (slideAtual >= totalSlides) slideAtual = totalSlides - 1;
+            atualizarUI();
+        }
+
+        // Suporte a setas do teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                if (slideAtual < totalSlides - 1) mudarSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                if (slideAtual > 0) mudarSlide(-1);
+            }
+        });
+
+        // Inicializa
+        atualizarUI();
+    </script>
+</body>
+</html>
