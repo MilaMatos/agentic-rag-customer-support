@@ -13,6 +13,8 @@ from crewai import Agent, Task, Crew, Process, LLM
 from src.rag.retriever import NexusRetriever
 from src.rag.prompts.redactor import construir_prompt_redator, separar_mensagem_e_fonte
 from src.rag.prompts.auditor import construir_prompt_auditor, extrair_json_auditoria
+from src.rag.prompts.classifier import run_classification
+from src.rag.prompts.summarizer import run_summarization
 
 load_dotenv()
 
@@ -70,26 +72,12 @@ class AtendimentoRedatorSchema(BaseModel):
 
 
 class VereditoAuditorSchema(BaseModel):
-    """Contrato de saída do Agente 3 (Auditor de Qualidade e Roteamento)."""
-    analise_raciocinio: str = Field(
-        description="1 frase explicando se respeitou o manual e o porquê do nível N1, N2 ou N3."
-    )
-    aprovado_para_envio: bool = Field(
-        description="True se aprovado, False se precisar de correção pelo Redator."
-    )
-    redator_alucinou: bool = Field(
-        description="True se o Redator inventou regras, prazos ou valores."
-    )
-    citou_fonte: bool = Field(
-        description="True se incluiu a tag [[FONTE: ...]] ao final."
-    )
-    nivel_escalonamento: Literal["N1", "N2", "N3"] = Field(
-        description="Nível técnico definitivo do chamado (N1, N2 ou N3)."
-    )
-    feedback_correcao: str = Field(
-        default="", description="Instrução de correção para o Redator caso reprovado."
-    )
-
+    analise_raciocinio: str = Field(description="1 frase explicando se respeitou o manual.")
+    aprovado_para_envio: bool = Field(description="True se aprovado, False se precisar de correção pelo Redator.")
+    redator_alucinou: bool = Field(description="True se o Redator inventou regras, prazos ou valores.")
+    citou_fonte: bool = Field(description="True se incluiu a tag [[FONTE: ...]] ao final.")
+    requer_escalonamento: bool = Field(description="True se o ticket precisa ser transferido para um especialista.")
+    feedback_correcao: str = Field(default="", description="Instrução de correção para o Redator caso reprovado.")
 
 class ResumoHandoffSchema(BaseModel):
     """Contrato de saída do Agente 4 (Resumo de Handoff para N2/N3)."""
@@ -159,15 +147,39 @@ class NexusSupportPipeline:
         pergunta_cliente: str,
         classificacao_externa: Optional[dict[str, Any]] = None,
     ) -> TriagemClassificadorSchema:
-        """
-        Recebe a classificação vinda do JSON de testes (ou do Agente Classificador)
-        """
-        if classificacao_externa:
-            return TriagemClassificadorSchema(**classificacao_externa)
+        try:
+            if classificacao_externa:
+                return TriagemClassificadorSchema(**classificacao_externa)
 
-        # TODO : Plugar chamada do Agente Classificador aqui quando não vier do JSON
-        raise NotImplementedError("Classificador automático ainda não integrado. Passe classificacao_externa.")
+            resultado = run_classification(pergunta_cliente)
 
+            if resultado.json_dict:
+                dados = resultado.json_dict
+            elif resultado.pydantic:
+                dados = resultado.pydantic.model_dump()
+            else:
+                texto_limpo = resultado.raw.replace('```json', '').replace('```', '').strip()
+                import json
+                dados = json.loads(texto_limpo)
+
+            dados_finais = {
+                "categoria": dados.get("categoria") or dados.get("category", "General Inquiry"),
+                "prioridade": dados.get("prioridade") or dados.get("priority", "Media"),
+                "nivel_inicial": dados.get("nivel_inicial") or dados.get("initial_level", "N1"),
+                "justificativa_triagem": dados.get("justificativa_triagem") or dados.get("justification", "Sem justificativa")
+            }
+
+            return TriagemClassificadorSchema(**dados_finais)
+
+        except Exception as e:
+            # Fallback global: se qualquer coisa falhar (CrewAI, Pydantic ou chaves inglesas), a pipeline não para.
+            fallback = {
+                "categoria": "General Inquiry",
+                "prioridade": "Media",
+                "nivel_inicial": "N1",
+                "justificativa_triagem": "Erro no parser, fallback seguro ativado."
+            }
+            return TriagemClassificadorSchema(**fallback)
     # -----------------------------------------------------------------
     # NÚCLEO RAG: REDATOR + AUDITOR
     # -----------------------------------------------------------------
@@ -194,8 +206,12 @@ class NexusSupportPipeline:
             allow_delegation=False,
         )
 
+        descricao_final = prompts_red["user_prompt"]
+        if feedback_anterior:
+            descricao_final += f"\n\nATENÇÃO (TENTATIVA ANTERIOR REPROVADA PELO AUDITOR):\n{feedback_anterior}"
+
         task_redacao = Task(
-            description=prompts_red["user_prompt"],
+            description=descricao_final,
             expected_output="Resposta ao cliente contendo a tag [[FONTE: Chunk_ID]] na última linha.",
             agent=agente_redator,
         )
@@ -205,6 +221,8 @@ class NexusSupportPipeline:
             tasks=[task_redacao],
             process=Process.sequential,
             verbose=False,
+            memory=False, 
+            cache=False  
         )
         crew_redator.kickoff()
         
@@ -252,17 +270,31 @@ class NexusSupportPipeline:
     # -----------------------------------------------------------------
     # PONTO DE EXTENSÃO 2: AGENTE DE RESUMO / HANDOFF
     # -----------------------------------------------------------------
-    def _executar_resumo_handoff(
+    def _executar_resumo_handoff(   
         self,
         caixa_rastreabilidade: CaixaRastreabilidadeSchema,
-    ) -> Optional[dict[str, Any]]:
+    ) -> Optional[ResumoHandoffSchema]:
         """
         Recebe a Caixa de Rastreabilidade pronta caso o ticket seja N2 ou N3.
-        Por enquanto permanece vazio (None) até a integração dos próximos agentes.
         """
-        # TODO: Ler os campos de `caixa_rastreabilidade` e gerar o resumo para N2/N3
+        mensagem = caixa_rastreabilidade.atendimento_n1.mensagem_enviada_ao_cliente
+        
+        if mensagem:
+            resultado_resumo = run_summarization(mensagem)
+            
+            nivel_classificador = caixa_rastreabilidade.triagem_inicial.nivel_inicial
+            nivel_destino = "N2" if nivel_classificador == "N1" else nivel_classificador
+            
+            return ResumoHandoffSchema(
+                nivel_destino=nivel_destino,
+                fila_responsavel=caixa_rastreabilidade.triagem_inicial.categoria,
+                resumo_executivo=resultado_resumo.raw,
+                acoes_ja_realizadas="Triagem automática e resposta gerada via RAG N1.",
+                motivo_tecnico_escalonamento=caixa_rastreabilidade.rag_contexto.regra_escalonamento_aplicada,
+                acao_recomendada_proximo_nivel="Análise técnica detalhada conforme manual."
+            )
+            
         return None
-
     # -----------------------------------------------------------------
     # EXECUÇÃO DE UM TICKET
     # -----------------------------------------------------------------
@@ -305,7 +337,8 @@ class NexusSupportPipeline:
         )
 
         # 3. Redator + Auditor com Loop de Autocorreção
-        t2 = time.time()
+        tempo_total_redator = 0.0
+        tempo_total_auditor = 0.0
         feedback = None
         dados_redator: dict[str, str] = {}
         veredito: Optional[VereditoAuditorSchema] = None
@@ -314,24 +347,27 @@ class NexusSupportPipeline:
         for tentativa in range(1, MAX_TENTATIVAS_CORRECAO + 2):
             tentativas_realizadas = tentativa
 
+            t_red_inicio = time.time()
             dados_redator = self._executar_redator(
                 pergunta_cliente=pergunta_cliente,
                 chunks=chunks,
                 feedback_anterior=feedback,
             )
+            tempo_total_redator += (time.time() - t_red_inicio)
             
+            t_aud_inicio = time.time()
             veredito = self._executar_auditor(
                 pergunta_cliente=pergunta_cliente,
                 resposta_redator=dados_redator["texto_completo_auditoria"],
                 chunks=chunks,
             )
+            tempo_total_auditor += (time.time() - t_aud_inicio)
             
             if veredito.aprovado_para_envio:
                 break
             feedback = veredito.feedback_correcao
 
-        tempo_agentes_rag = round(time.time() - t2, 3)
-        requer_handoff = veredito.nivel_escalonamento in ("N2", "N3")
+        requer_handoff = veredito.requer_escalonamento
 
         # 4. Montagem da Caixa de Rastreabilidade Oficial
         caixa = CaixaRastreabilidadeSchema(
@@ -351,7 +387,8 @@ class NexusSupportPipeline:
             telemetria_tempos_s={
                 "classificacao_s": tempo_classificacao,
                 "retriever_pgvector_s": tempo_rag,
-                "redator_e_auditor_s": tempo_agentes_rag,
+                "redator_s": round(tempo_total_redator, 3), # <- Tempo individual do Redator
+                "auditor_s": round(tempo_total_auditor, 3), # <- Tempo individual do Auditor
                 "total_pipeline_s": round(time.time() - t_inicio_total, 3),
             },
         )
@@ -390,12 +427,12 @@ def rodar_pipeline_com_json_testes(filtro_id: Optional[str] = None) -> Path:
         print(f"\nProcessando [{caso['id_teste']}] -> Categoria: {entrada_classificador['categoria']}...")
         caixa = pipeline.processar_ticket(
             pergunta_cliente=caso["pergunta"],
-            classificacao_externa=entrada_classificador,
+            classificacao_externa=None,
             ticket_id=caso["id_teste"],
         )
         caixas_geradas.append(caixa.model_dump())
 
-        print(f" -> Nível Final Auditor: {caixa.auditoria.nivel_escalonamento} | Handoff: {caixa.requer_handoff_humano}")
+        print(f" -> Requer Escalonamento: {caixa.auditoria.requer_escalonamento} | Handoff: {caixa.requer_handoff_humano}")
         print(f" -> Tempo Total: {caixa.telemetria_tempos_s['total_pipeline_s']}s")
 
     caminho_saida = PASTA_RASTREABILIDADE / f"rastreabilidade_tickets_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
