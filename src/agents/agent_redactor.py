@@ -3,7 +3,8 @@ from typing import Any, Optional
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process, LLM
 
-from src.rag.prompts.redactor import construir_prompt_redator, separar_mensagem_e_fonte
+from src.agents.prompts.redactor import construir_prompt_redator
+from src.agents.parsers import separar_mensagem_e_fonte
 
 load_dotenv()
 
@@ -12,7 +13,7 @@ BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
 
 
 class AgenteRedatorN1:
-    """Agente autônomo responsável pela redação humanizada"""
+    """Agente autônomo responsável pela redação humanizada N1."""
 
     def __init__(self, model_name: str = "nvidia/nemotron-3.5-lightning-30b-a3b"):
         if not API_KEY:

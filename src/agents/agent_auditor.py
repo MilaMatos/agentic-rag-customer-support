@@ -1,10 +1,11 @@
 import os
-from typing import Any, Literal
+from typing import Any
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
 from crewai import Agent, Task, Crew, Process, LLM
 
-from src.rag.prompts.auditor import construir_prompt_auditor, extrair_json_auditoria
+from src.agents.prompts.auditor import construir_prompt_auditor
+from src.agents.parsers import extrair_json_auditoria
+from src.agents.schemas import VereditoAuditorSchema
 
 load_dotenv()
 
@@ -12,30 +13,8 @@ API_KEY = os.getenv("NVIDIA_API_KEY")
 BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
 
 
-class VereditoAuditorSchema(BaseModel):
-    """Contrato de saída do Agente Auditor de Qualidade e Roteamento"""
-    analise_raciocinio: str = Field(
-        description="1 frase explicando se respeitou o manual e o porquê do nível N1, N2 ou N3."
-    )
-    aprovado_para_envio: bool = Field(
-        description="True se aprovado, False se precisar de correção pelo Redator."
-    )
-    redator_alucinou: bool = Field(
-        description="True se o Redator inventou regras, prazos ou valores."
-    )
-    citou_fonte: bool = Field(
-        description="True se incluiu a tag [[FONTE: ...]] ao final."
-    )
-    nivel_escalonamento: Literal["N1", "N2", "N3"] = Field(
-        description="Nível técnico atual do chamado (N1, N2 ou N3)."
-    )
-    feedback_correcao: str = Field(
-        default="", description="Instrução de correção para o Redator caso reprovado."
-    )
-
-
 class AgenteAuditorQualidade:
-    """Agente autônomo responsável por auditar a resposta N1 e definir o escalonamento"""
+    """Agente autônomo responsável por auditar a resposta N1 e definir se requer escalonamento."""
 
     def __init__(self, model_name: str = "nvidia/nemotron-3.5-lightning-30b-a3b"):
         if not API_KEY:
@@ -66,7 +45,7 @@ class AgenteAuditorQualidade:
 
         agente = Agent(
             role="Auditor de Qualidade e Roteamento de Tickets",
-            goal="Auditar fidelidade da resposta e definir o nível atual do chamado (N1, N2 ou N3).",
+            goal="Auditar fidelidade da resposta e definir se requer escalonamento (true ou false).",
             backstory=prompts["system_prompt"],
             llm=self.llm,
             verbose=False,
@@ -75,7 +54,7 @@ class AgenteAuditorQualidade:
 
         task = Task(
             description=prompts["user_prompt"],
-            expected_output="JSON válido contendo analise_raciocinio, aprovado_para_envio, redator_alucinou, citou_fonte, nivel_escalonamento e feedback_correcao.",
+            expected_output="JSON válido contendo analise_raciocinio, aprovado_para_envio, redator_alucinou, citou_fonte, requer_escalonamento e feedback_correcao.",
             agent=agente,
         )
 
