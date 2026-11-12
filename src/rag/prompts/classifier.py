@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, LLM
-from classification_schema import TicketClassification
+from src.rag.prompts.classification_schema import TicketClassification
 
 load_dotenv()
 
