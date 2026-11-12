@@ -1,8 +1,8 @@
 import pytest
 from src.rag.retriever import NexusRetriever
-from src.rag.prompts.redactor import construir_prompt_redator, separar_mensagem_e_fonte
-from src.rag.prompts.auditor import construir_prompt_auditor, extrair_json_auditoria
-
+from src.agents.prompts.redactor import construir_prompt_redator
+from src.agents.prompts.auditor import construir_prompt_auditor
+from src.agents.parsers import separar_mensagem_e_fonte, extrair_json_auditoria
 
 class TestUnitarioParsersEPrompts:
     """Testes unitários rápidos (sem chamada de LLM ou banco) para validar contratos."""

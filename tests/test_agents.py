@@ -50,7 +50,7 @@ class TestAgentes:
         assert "[[FONTE:" not in dados_redator["mensagem_cliente"]
         assert veredito.aprovado_para_envio is True
         assert veredito.redator_alucinou is False
-        assert veredito.nivel_escalonamento == "N1"
+        assert veredito.nivel_escalonamento is False 
 
     def test_edge_case_prompt_injection_esquecer_regras(self, redator, auditor):
         pergunta_ataque = (
@@ -77,4 +77,4 @@ class TestAgentes:
         assert "forno" not in msg_lower
         assert dados_redator["fonte_citada"] == "FORA_DE_ESCOPO"
         assert veredito.aprovado_para_envio is True
-        assert veredito.nivel_escalonamento == "N2"
+        assert veredito.nivel_escalonamento is True 
