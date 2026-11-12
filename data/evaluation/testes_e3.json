@@ -58,5 +58,95 @@
       "nivel_escalonamento": "N1",
       "chunk_id": "MAN-GENE-001-SEC-03"
     }
+  },
+  {
+    "id_teste": "TC-007",
+    "categoria": "Account",
+    "descricao": "Cliente deseja alterar e-mail e senha - N1 básico de autoatendimento",
+    "pergunta": "Preciso mudar o e-mail cadastrado na minha conta e alterar a minha senha atual. Como faço isso?",
+    "esperado": {
+      "nivel_escalonamento": "N1",
+      "chunk_id": "MAN-ACCO-001-SEC-05"
+    }
+  },
+  {
+    "id_teste": "TC-008",
+    "categoria": "Technical",
+    "descricao": "Relato de incidente crítico na API (Erro 500) - Fora do escopo N1, escalar urgente",
+    "pergunta": "A API de vocês está retornando Erro 500 Internal Server Error desde as 8h da manhã. Nosso sistema de produção está parado!",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "FORA_DE_ESCOPO"
+    }
+  },
+  {
+    "id_teste": "TC-009",
+    "categoria": "Billing",
+    "descricao": "Tentativa de autoatendimento falhou (Cartão bloqueado pelo sistema mas liberado no banco) - Escalar",
+    "pergunta": "Estou tentando atualizar meu cartão de crédito no painel, mas o sistema diz 'Cartão Rejeitado' sendo que eu acabei de ligar no banco e eles disseram que tá tudo certo lá.",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "MAN-BILL-001-SEC-02"
+    }
+  },
+  {
+    "id_teste": "TC-010",
+    "categoria": "Fraud",
+    "descricao": "Cliente clicou em link de phishing - Necessita intervenção manual de segurança",
+    "pergunta": "Recebi um e-mail de vocês pedindo para redefinir a senha e cliquei no link, mas achei a URL meio estranha depois. Acho que caí num golpe de phishing.",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "MAN-FRAU-001-SEC-05"
+    }
+  },
+  {
+    "id_teste": "TC-011",
+    "categoria": "General Inquiry",
+    "descricao": "Busca por documentos legais atualizados - Consulta informacional simples",
+    "pergunta": "Onde eu consigo encontrar os Termos de Serviço e a Política de Privacidade atualizada de 2026?",
+    "esperado": {
+      "nivel_escalonamento": "N1",
+      "chunk_id": "MAN-GENE-001-SEC-01"
+    }
+  },
+  {
+    "id_teste": "TC-012",
+    "categoria": "Account",
+    "descricao": "Pedido de unificação de contas (Merge) - Procedimento administrativo fora do N1",
+    "pergunta": "Tenho duas contas separadas com e-mails diferentes e queria saber se é possível mesclar (merge) as duas em um único login.",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "FORA_DE_ESCOPO"
+    }
+  },
+  {
+    "id_teste": "TC-013",
+    "categoria": "Billing",
+    "descricao": "Refaturamento fiscal por erro no CNPJ - Exige ação de backoffice",
+    "pergunta": "Minha nota fiscal saiu com o CNPJ errado, preciso que vocês cancelem e emitam uma nova urgente para a contabilidade não travar o pagamento.",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "FORA_DE_ESCOPO"
+    }
+  },
+  {
+    "id_teste": "TC-014",
+    "categoria": "Technical",
+    "descricao": "Falha parcial de funcionalidade (CSV vazio, PDF OK) - Escalar sem pedir para limpar cache genérico",
+    "pergunta": "I'm trying to export my reports to CSV, but the file downloaded is completely empty. PDF export works fine though.",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "FORA_DE_ESCOPO"
+    }
+  },
+  {
+    "id_teste": "TC-015",
+    "categoria": "General Inquiry",
+    "descricao": "Pedido de parceria B2B (White-label) - Consulta comercial fora da base de suporte",
+    "pergunta": "Vocês possuem algum programa de parcerias para agências ou sistema de afiliados (white-label) que eu possa revender a plataforma?",
+    "esperado": {
+      "nivel_escalonamento": "N2",
+      "chunk_id": "FORA_DE_ESCOPO"
+    }
   }
 ]
