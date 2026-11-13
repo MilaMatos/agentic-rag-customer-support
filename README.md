@@ -58,13 +58,13 @@ docker-compose up -d
 ### 4. Ingestão de Dados (Knowledge Base)
 Antes de rodar os agentes, popule o banco de dados vetorial com os manuais operacionais da NexusTech:
 ```bash
-python -m src.ingestion.vector_pipeline
+venv/bin/python -m src.ingestion.vector_pipeline
 ```
 
 ### 5. Executar a Bateria de Testes do RAG Multi-Agente
 Execute o orquestrador CrewAI para processar o dataset de avaliação (`testes_e3.json`). O script fará a busca vetorial, executará o Agente Redator e acionará o Agente Auditor:
 ```bash
-python -m src.pipeline_agents
+venv/bin/python -m src.pipeline_agents
 ```
 *(Os resultados da execução, contendo as métricas de acerto e o JSON de rastreabilidade, serão salvos automaticamente na pasta `logs/`).*
 
@@ -81,31 +81,31 @@ nexustech-support-copilot/
 │   └── knowledge_base/                   # Chunks (json) e Manuais sintéticos (manuals)
 ├── docs/                                 # Documentação do projeto por entrega
 │   ├── E1/                               # Entrega 1: Planejamento
-│   │   ├── apresentacao_E1.html
-│   │   ├── arquitetura_stack.md
-│   │   ├── diagrama.jpeg
-│   │   └── entendimento_do_problema.md
-│   └── E2/                               # Entrega 2: Dados e Ingestão
-│       ├── apresentacao_E2.html
-│       ├── estrategia_chunking.md
-│       └── pesquisa_dados_kb.md
-├── logs/                                 # Logs de execução e rastreabilidade (Gerados automaticamente)
-├── sandbox/                              # Scripts de rascunho e testes isolados (Ignorado no git)
+│   ├── E2/                               # Entrega 2: Dados e Ingestão
+│   └── E3/                               # Entrega 3: Motor RAG e Agentes
+├── logs/                                 # Logs e rastreabilidade da Caixa de Estado
+├── sandbox/                              # Simulador de terminal e testes interativos
 ├── src/
-│   ├── ingestion/                        # Scripts de processamento e ingestão
-│   │   ├── chunking_strategy.py          # Lógica de particionamento (Chunking)
-│   │   ├── export_manuals.py             # Geração de manuais
-│   │   ├── ingestion_pipeline.py         # Pipeline de preparação dos dados
-│   │   └── vector_pipeline.py            # Ingestão vetorial no PostgreSQL/pgvector
-│   ├── rag/                              # Pipeline RAG Multi-Agente
+│   ├── agents/                           # Orquestração Multi-Agente (CrewAI)
 │   │   ├── prompts/                      # Templates de sistema e guardrails
-│   │   │   ├── auditor.py
-│   │   │   └── redactor.py
-│   │   └── retriever.py                  # Busca semântica e fatiamento no PGVector
-│   └── pipeline_agents.py                # Orquestrador CrewAI (Redator + Auditor)
+│   │   ├── agent_auditor.py              # Classe do Agente Auditor de Qualidade
+│   │   ├── agent_classifier.py           # Classe do Agente Classificador (Triagem)
+│   │   ├── agent_redactor.py             # Classe do Agente Redator N1
+│   │   ├── agent_summarizer.py           # Classe do Agente de Resumo Interno
+│   │   ├── parsers.py                    # Output parsers (Regex, JSON, Limpeza)
+│   │   └── schemas.py                    # Contratos de dados e Caixa de Rastreabilidade
+│   ├── ingestion/                        # Scripts de processamento e ingestão offline
+│   ├── rag/                              # Módulo de Recuperação Vetorial (Runtime)
+│   │   └── retriever.py                  # Busca semântica e Context Slicing no PGVector
+│   └── pipeline_agents.py                # Orquestrador central de fluxo dos agentes
+├── tests/                                # Suíte de testes automatizados (Pytest)
+│   ├── test_agents.py                    # Testes de integração e casos de borda
+│   ├── test_retriever_rag.py             # Testes de precisão vetorial (Top-K)
+│   └── test_unit_modulos.py              # Testes unitários (Parsers e Regex)
 ├── .env                                  # Variáveis de ambiente (ignorado no git)
 ├── .gitignore
 ├── docker-compose.yml                    # Setup de infra (PostgreSQL + pgvector)
+├── pytest.ini                            # Configurações do ambiente de testes
 ├── requirements.txt                      # Dependências Python
 └── README.md                             # Documentação principal e roadmap
 ```
@@ -122,14 +122,16 @@ nexustech-support-copilot/
 - [x] **Entrega 2 (31/10) — Infraestrutura e Ingestão de Dados**
   - [x] Setup do ambiente e banco PostgreSQL + `pgvector` via Docker
   - [x] Pipeline de pesquisa, limpeza, chunking semântico e geração de embeddings
-- [ ] **Entrega 3 (07/11) — Pipeline RAG Funcional**
-  - [ ] Módulo de retrieval e conexão com a LLM
-- [ ] **Entrega 4 (14/11) — Primeiro Agente Funcional**
-  - [ ] Implementação isolada e testes com *tools*
-- [ ] **Entrega 5 (21/11) — Sistema Multi-Agente Orquestrado**
-  - [ ] Integração dos agentes e configuração de estado/loops no LangGraph
-- [ ] **Entrega 6 (28/11) — API e Interface do Usuário**
+- [x] **Entrega 3 (07/11) — Pipeline RAG Funcional**
+  - [x] Módulo de recuperação vetorial (Retriever) otimizado
+  - [x] Estratégia de particionamento (Context Slicing)
+- [x] **Entrega 4 e 5 (14/11 e 21/11) — Sistema Multi-Agente Orquestrado (Adiantado)**
+  - [x] Construção isolada dos 4 agentes (Classificador, Redator, Auditor e Resumo)
+  - [x] Contratos via Pydantic (Caixa de Rastreabilidade) e Orquestração
+  - [x] Suíte de validação e casos de borda com Pytest
+- [ ] **Entrega 6 (28/11) — API, Memória e Interface do Usuário**
+  - [ ] Implementação do histórico deslizante multi-turno no pipeline
   - [ ] Exposição de rotas FastAPI e integração com Frontend
-- [ ] **Entrega 7 (05/12) — Testes, Avaliação e Documentação**
-  - [ ] Aferição de métricas e testes end-to-end
+- [ ] **Entrega 7 (05/12) — Testes em Larga Escala e Documentação**
+  - [ ] Aferição de métricas e testes end-to-end simulando produção
 - [ ] **Apresentação Final (12/12) — Showcase**
