@@ -20,13 +20,22 @@ REGRAS DE OURO (GUARDRAILS):
 """
 
 
+# Altere a assinatura e o início da função construir_prompt_redator em src/agents/prompts/redactor.py:
+
 def construir_prompt_redator(
     pergunta_cliente: str,
-    chunks_fatiados: list[dict[str, Any]],
+    chunks_fatiados: Optional[list[dict[str, Any]]] = None,
     feedback_auditor: Optional[str] = None,
+    categoria_sugerida: str = "",
 ) -> dict[str, str]:
-    """Monta o system e user prompt do Redator com chunks RAG e feedback opcional."""
-    if not chunks_fatiados:
+    """Monta o system e user prompt do Redator"""
+    if chunks_fatiados is None:
+        dica_cat = f" (use category='{categoria_sugerida}')" if categoria_sugerida else ""
+        contexto_str = (
+            f"[INSTRUÇÃO DE TOOL]: Use obrigatoriamente a ferramenta `buscar_manual_rag_tool`{dica_cat} "
+            f"para consultar a base de conhecimento antes de responder ao cliente."
+        )
+    elif len(chunks_fatiados) == 0:
         contexto_str = (
             "[Chunk_ID: FORA_DE_ESCOPO]\n"
             "Nenhum manual encontrado para esta solicitação. Informe educadamente ao cliente "
