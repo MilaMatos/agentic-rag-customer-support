@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, Optional
 from dotenv import load_dotenv
@@ -5,8 +6,10 @@ from crewai import Agent, Task, Crew, Process, LLM
 
 from src.agents.prompts.redactor import construir_prompt_redator
 from src.agents.parsers import separar_mensagem_e_fonte
+from src.agents.tools import buscar_manual_rag_tool
 
 load_dotenv()
+logging.getLogger("crewai.llms.base_llm").setLevel(logging.ERROR)
 
 API_KEY = os.getenv("NVIDIA_API_KEY")
 BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
@@ -29,24 +32,30 @@ class AgenteRedatorN1:
             additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
             timeout=30,
         )
+        self.tools = [buscar_manual_rag_tool]
 
     def executar(
         self,
         pergunta_cliente: str,
-        chunks: list[dict[str, Any]],
+        chunks: Optional[list[dict[str, Any]]] = None,
         feedback_anterior: Optional[str] = None,
+        categoria: str = "",
     ) -> dict[str, str]:
         prompts = construir_prompt_redator(
             pergunta_cliente=pergunta_cliente,
             chunks_fatiados=chunks,
             feedback_auditor=feedback_anterior,
+            categoria_sugerida=categoria,
         )
+
+        ferramentas_ativas = self.tools if chunks is None else []
 
         agente = Agent(
             role="Especialista de Atendimento (Redator)",
             goal="Produzir resposta clara e fiel à base de conhecimento para o cliente.",
             backstory=prompts["system_prompt"],
             llm=self.llm,
+            tools=ferramentas_ativas,
             verbose=False,
             allow_delegation=False,
         )
