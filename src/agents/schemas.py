@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -67,3 +67,42 @@ class CaixaRastreabilidadeSchema(BaseModel):
     auditoria: VereditoAuditorSchema
     resumo_interno_ticket: Optional[str] = None
     telemetria_tempos_s: dict[str, float]
+
+
+AcaoHumana = Literal["ACEITA_SEM_EDICAO", "EDITADA", "REJEITADA_MANUAL", "ESCALADA_N2"]
+StatusSessao = Literal["ABERTA", "AGUARDANDO_N1", "ESCALADA_N2", "ENCERRADA"]
+
+
+class SugestaoCopilotoSchema(BaseModel):
+    """Saída da Fase 1: sugestão pendente aguardando decisão do atendente N1"""
+    suggestion_id: str
+    session_id: str
+    tenant_id: str = "default"
+    pergunta_cliente: str
+    mensagem_sugerida: str
+    alerta_escalonamento: bool
+    caixa_rastreabilidade: CaixaRastreabilidadeSchema
+    chunks_usados: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ConfirmacaoHumanaSchema(BaseModel):
+    """Entrada da Fase 2: decisão e texto efetivamente enviado pelo N1"""
+    suggestion_id: str
+    acao_humana: AcaoHumana
+    mensagem_final_enviada: str
+    atendente_id: str = "n1_default"
+
+
+class ResultadoConfirmacaoSchema(BaseModel):
+    """Resultado auditado após envio humano e eventual handoff para N2/N3"""
+    suggestion_id: str
+    session_id: str
+    tenant_id: str = "default"
+    acao_humana: AcaoHumana
+    atendente_id: str
+    mensagem_sugerida: str
+    mensagem_final_enviada: str
+    was_edited: bool
+    edit_ratio: float
+    status_sessao: StatusSessao
+    handoff_summary: Optional[str] = None
