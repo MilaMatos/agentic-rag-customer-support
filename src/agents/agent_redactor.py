@@ -40,12 +40,16 @@ class AgenteRedatorN1:
         chunks: Optional[list[dict[str, Any]]] = None,
         feedback_anterior: Optional[str] = None,
         categoria: str = "",
+        historico_conversa: str = "",
+        forcar_escalonamento_limite: bool = False,
     ) -> dict[str, str]:
         prompts = construir_prompt_redator(
             pergunta_cliente=pergunta_cliente,
             chunks_fatiados=chunks,
             feedback_auditor=feedback_anterior,
             categoria_sugerida=categoria,
+            historico_conversa=historico_conversa,
+            forcar_escalonamento_limite=forcar_escalonamento_limite,
         )
 
         ferramentas_ativas = self.tools if chunks is None else []

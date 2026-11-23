@@ -42,8 +42,8 @@ def buscar_manual_rag_tool(query: str, category: str = "") -> str:
     if not chunks:
         return (
             "[Chunk_ID: FORA_DE_ESCOPO]\n"
-            "Nenhum manual encontrado com similaridade suficiente (< 0.30) "
-            "Informe educadamente que está transferindo para um especialista"
+            "Nenhum manual encontrado com similaridade suficiente (< 0.30). "
+            "Informe educadamente que está transferindo para um especialista e cite [[FONTE: FORA_DE_ESCOPO]]."
         )
 
     blocos = []

@@ -30,8 +30,17 @@ class AgenteClassificador:
             timeout=30,
         )
 
-    def executar(self, pergunta_cliente: str) -> TicketClassification:
-        prompts = construir_prompt_classificador(pergunta_cliente)
+    def executar(
+        self,
+        pergunta_cliente: str,
+        historico_recente: str = "",
+        categoria_anterior: str = "",
+    ) -> TicketClassification:
+        prompts = construir_prompt_classificador(
+            pergunta_cliente=pergunta_cliente,
+            historico_recente=historico_recente,
+            categoria_anterior=categoria_anterior,
+        )
 
         agente = Agent(
             role="Especialista em Triagem de Suporte B2B",
@@ -44,7 +53,11 @@ class AgenteClassificador:
 
         task = Task(
             description=prompts["user_prompt"],
-            expected_output="Um JSON estruturado com category, priority, initial_level e triage_justification.",
+            expected_output=(
+                'JSON válido contendo exatamente as chaves: '
+                '"category", "priority", "initial_level", "triage_justification", '
+                '"is_followup" (boolean) e "search_query" (string).'
+            ),
             agent=agente,
         )
 

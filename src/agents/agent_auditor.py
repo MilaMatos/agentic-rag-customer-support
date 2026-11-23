@@ -36,11 +36,15 @@ class AgenteAuditorQualidade:
         pergunta_cliente: str,
         resposta_redator: str,
         chunks: list[dict[str, Any]],
+        historico_conversa: str = "",
+        forcar_escalonamento_limite: bool = False,
     ) -> VereditoAuditorSchema:
         prompts = construir_prompt_auditor(
             pergunta_cliente=pergunta_cliente,
             resposta_redator=resposta_redator,
             chunks_fatiados=chunks,
+            historico_conversa=historico_conversa,
+            forcar_escalonamento_limite=forcar_escalonamento_limite,
         )
 
         agente = Agent(
