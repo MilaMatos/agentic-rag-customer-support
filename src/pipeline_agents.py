@@ -8,6 +8,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+from difflib import SequenceMatcher
+from uuid import uuid4
 
 from src.rag.retriever import NexusRetriever
 from src.agents.agent_classifier import AgenteClassificador
@@ -21,6 +23,9 @@ from src.agents.schemas import (
     AtendimentoRedatorSchema,
     VereditoAuditorSchema,
     CaixaRastreabilidadeSchema,
+    SugestaoCopilotoSchema,
+    ConfirmacaoHumanaSchema,
+    ResultadoConfirmacaoSchema,
 )
 
 MAX_TENTATIVAS_CORRECAO = 2
@@ -287,6 +292,200 @@ class NexusSupportPipeline:
         )
 
         return caixa
+
+    def gerar_sugestao_turno(
+        self,
+        pergunta_cliente: str,
+        sessao: SessionMemory,
+    ) -> SugestaoCopilotoSchema:
+        """Fase 1 HITL: gera sugestão e auditoria sem gravar na memória definitiva."""
+        t_inicio = time.perf_counter()
+        tempos: dict[str, float] = {}
+
+        historico_str = sessao.obter_historico_formatado()
+        cat_anterior = sessao.categoria_atual or ""
+
+        t0 = time.perf_counter()
+        triagem = self.classificador.executar(
+            pergunta_cliente=pergunta_cliente,
+            historico_recente=historico_str,
+            categoria_anterior=cat_anterior,
+        )
+        if sessao.turno_global == 0:
+            triagem.is_followup = False
+        tempos["triagem_s"] = round(time.perf_counter() - t0, 3)
+
+        t0 = time.perf_counter()
+        reutilizar_cache, proximo_turno_topico = sessao.avaliar_contexto_topico(
+            nova_categoria=triagem.category,
+            is_followup=triagem.is_followup,
+        )
+
+        if reutilizar_cache:
+            chunks = sessao.chunks_em_cache
+        else:
+            query_busca = triagem.search_query.strip() if triagem.search_query else pergunta_cliente
+            chunks = self.retriever.buscar_chunks(
+                query=query_busca,
+                k=1,
+                category_filter=triagem.category,
+                min_similarity=MIN_SIMILARITY,
+            )
+        tempos["retrieval_s"] = round(time.perf_counter() - t0, 3)
+
+        # Limpa histórico injetado no Redator/Auditor quando houver troca de tópico
+        historico_agentes = historico_str if reutilizar_cache else ""
+
+        t0 = time.perf_counter()
+        feedback = None
+        tentativas = 0
+        res_redator = {"mensagem_cliente": "", "fonte_citada": "NÃO_CITADA", "texto_completo_auditoria": ""}
+        veredito: Optional[VereditoAuditorSchema] = None
+
+        for tentativa in range(1, MAX_TENTATIVAS_CORRECAO + 2):
+            tentativas = tentativa
+            res_redator = self.redator.executar(
+                pergunta_cliente=pergunta_cliente,
+                chunks=chunks,
+                feedback_anterior=feedback,
+                categoria=triagem.category,
+                historico_conversa=historico_agentes,
+                forcar_escalonamento_limite=False,
+            )
+            veredito = self.auditor.executar(
+                pergunta_cliente=pergunta_cliente,
+                resposta_redator=res_redator["texto_completo_auditoria"],
+                chunks=chunks,
+                historico_conversa=historico_agentes,
+                forcar_escalonamento_limite=False,
+            )
+            if veredito.aprovado_para_envio:
+                break
+            feedback = veredito.feedback_correcao
+
+        tempos["redacao_e_auditoria_s"] = round(time.perf_counter() - t0, 3)
+        tempos["resumo_s"] = 0.0
+        tempos["total_pipeline_s"] = round(time.perf_counter() - t_inicio, 3)
+
+        if chunks:
+            c = chunks[0]
+            rag_info = ContextoRAGSchema(
+                chunk_id=c["chunk_id"],
+                subcategoria=c["subcategory"],
+                score_similaridade=c["similarity_score"],
+                regra_escalonamento_aplicada=c["fatias"]["escalonamento"],
+                reutilizado_do_cache=reutilizar_cache,
+                turno_no_topico=proximo_turno_topico,
+            )
+        else:
+            rag_info = ContextoRAGSchema(
+                chunk_id="FORA_DE_ESCOPO",
+                subcategoria="Nenhuma",
+                score_similaridade=0.0,
+                regra_escalonamento_aplicada="Escalonamento padrão por ausência de documentação.",
+                reutilizado_do_cache=False,
+                turno_no_topico=proximo_turno_topico,
+            )
+
+        proximo_turno_global = sessao.turno_global + 1
+        caixa = CaixaRastreabilidadeSchema(
+            ticket_id=f"{sessao.session_id}-T{proximo_turno_global}",
+            timestamp=datetime.now().astimezone().isoformat(),
+            pergunta_cliente=pergunta_cliente,
+            triagem_inicial=triagem,
+            rag_contexto=rag_info,
+            atendimento_n1=AtendimentoRedatorSchema(
+                mensagem_enviada_ao_cliente=res_redator["mensagem_cliente"],
+                fonte_tecnica_citada=res_redator["fonte_citada"],
+                tentativas_redacao=tentativas,
+            ),
+            auditoria=veredito,
+            resumo_interno_ticket=None,
+            telemetria_tempos_s=tempos,
+        )
+
+        suggestion_id = f"SUG-{uuid4().hex[:10]}"
+        sugestao = SugestaoCopilotoSchema(
+            suggestion_id=suggestion_id,
+            session_id=sessao.session_id,
+            tenant_id=sessao.tenant_id,
+            pergunta_cliente=pergunta_cliente,
+            mensagem_sugerida=res_redator["mensagem_cliente"],
+            alerta_escalonamento=veredito.requer_escalonamento,
+            caixa_rastreabilidade=caixa,
+            chunks_usados=chunks,
+        )
+
+        sessao.salvar_sugestao_pendente(suggestion_id, sugestao.model_dump())
+        return sugestao
+
+    def confirmar_envio_turno(
+        self,
+        sessao: SessionMemory,
+        confirmacao: ConfirmacaoHumanaSchema,
+    ) -> ResultadoConfirmacaoSchema:
+        """Fase 2 HITL: calcula diff de edição, efetiva memória e gera resumo só no escalonamento."""
+        dados_pendentes = sessao.consumir_sugestao_pendente(confirmacao.suggestion_id)
+        sugestao = SugestaoCopilotoSchema(**dados_pendentes)
+
+        texto_ia = sugestao.mensagem_sugerida.strip()
+        texto_humano = confirmacao.mensagem_final_enviada.strip()
+        was_edited = texto_ia != texto_humano
+        similaridade = SequenceMatcher(None, texto_ia, texto_humano).ratio()
+        edit_ratio = round(1.0 - similaridade, 4) if was_edited else 0.0
+
+        sessao.registrar_turno(
+            pergunta_cliente=sugestao.pergunta_cliente,
+            resposta_enviada=texto_humano,
+            categoria=sugestao.caixa_rastreabilidade.triagem_inicial.category,
+            is_followup=sugestao.caixa_rastreabilidade.triagem_inicial.is_followup,
+            chunks_usados=sugestao.chunks_usados,
+            caixa_dict=sugestao.caixa_rastreabilidade.model_dump(),
+        )
+
+        handoff_summary = None
+        if confirmacao.acao_humana == "ESCALADA_N2":
+            transcricao = sessao.obter_historico_formatado(completo=True)
+            handoff_summary = self.resumidor.executar(resposta_final_cliente=transcricao)
+            sessao.status = "ESCALADA_N2"
+            sessao.handoff_summary = handoff_summary
+        else:
+            sessao.status = "ABERTA"
+
+        return ResultadoConfirmacaoSchema(
+            suggestion_id=confirmacao.suggestion_id,
+            session_id=sessao.session_id,
+            tenant_id=sessao.tenant_id,
+            acao_humana=confirmacao.acao_humana,
+            atendente_id=confirmacao.atendente_id,
+            mensagem_sugerida=texto_ia,
+            mensagem_final_enviada=texto_humano,
+            was_edited=was_edited,
+            edit_ratio=edit_ratio,
+            status_sessao=sessao.status,
+            handoff_summary=handoff_summary,
+        )
+
+    def processar_turno_sessao(
+        self,
+        pergunta_cliente: str,
+        sessao: SessionMemory,
+        gerar_resumo: bool = False,
+    ) -> CaixaRastreabilidadeSchema:
+        """Atalho síncrono (CLI/testes) que gera e auto-confirma a sugestão."""
+        sugestao = self.gerar_sugestao_turno(pergunta_cliente=pergunta_cliente, sessao=sessao)
+        acao = "ESCALADA_N2" if (gerar_resumo and sugestao.alerta_escalonamento) else "ACEITA_SEM_EDICAO"
+
+        resultado = self.confirmar_envio_turno(
+            sessao=sessao,
+            confirmacao=ConfirmacaoHumanaSchema(
+                suggestion_id=sugestao.suggestion_id,
+                acao_humana=acao,
+                mensagem_final_enviada=sugestao.mensagem_sugerida,
+            ),
+        )
+        sugestao.caixa_rastreabilidade.resumo_interno_ticket = resultado.handoff_summary
+        return sugestao.caixa_rastreabilidade
 
 
 def rodar_pipeline_com_json_testes(
