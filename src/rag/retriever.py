@@ -26,7 +26,7 @@ class NvidiaNimQueryEmbeddings(Embeddings):
     def __init__(self):
         if not API_KEY:
             raise RuntimeError("Chave da API NVIDIA não encontrada no .env.")
-        self.client = OpenAI(api_key=API_KEY, base_url=BASE_URL, timeout=15.0, max_retries=0)
+        self.client = OpenAI(api_key=API_KEY, base_url=BASE_URL, timeout=20.0, max_retries=1)
         self.model = MODEL_NAME
 
     def _embed_query(self, text: str) -> list[float]:
