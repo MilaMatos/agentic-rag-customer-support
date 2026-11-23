@@ -1,9 +1,12 @@
+from contextvars import ContextVar
 from typing import Any, Optional
 from crewai.tools import tool
 from src.rag.retriever import NexusRetriever
 
 _retriever_instance: Optional[NexusRetriever] = None
-_ultimos_chunks_recuperados: list[dict[str, Any]] = []
+_ultimos_chunks_ctx: ContextVar[list[dict[str, Any]]] = ContextVar(
+    "ultimos_chunks_rag", default=[]
+)
 
 
 def obter_retriever() -> NexusRetriever:
@@ -15,8 +18,8 @@ def obter_retriever() -> NexusRetriever:
 
 
 def obter_ultimos_chunks_tool() -> list[dict[str, Any]]:
-    """Retorna os chunks da última chamada da tool para auditoria e testes."""
-    return _ultimos_chunks_recuperados
+    """Retorna os chunks da última chamada da tool no contexto atual"""
+    return _ultimos_chunks_ctx.get()
 
 
 @tool("buscar_manual_rag_tool")
@@ -27,17 +30,16 @@ def buscar_manual_rag_tool(query: str, category: str = "") -> str:
     - query: Pergunta ou sintoma relatado pelo cliente.
     - category: Categoria opcional (Technical, Billing, Account, Fraud, General Inquiry).
     """
-    global _ultimos_chunks_recuperados
     retriever = obter_retriever()
-
     cat_valida = category.strip() if category and category.strip() else None
+
     chunks = retriever.buscar_chunks(
         query=query,
         k=1,
         category_filter=cat_valida,
         min_similarity=0.30,
     )
-    _ultimos_chunks_recuperados = chunks
+    _ultimos_chunks_ctx.set(chunks)
 
     if not chunks:
         return (
