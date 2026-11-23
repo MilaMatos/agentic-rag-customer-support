@@ -27,8 +27,10 @@ def construir_prompt_redator(
     chunks_fatiados: Optional[list[dict[str, Any]]] = None,
     feedback_auditor: Optional[str] = None,
     categoria_sugerida: str = "",
+    historico_conversa: str = "",
+    forcar_escalonamento_limite: bool = False,
 ) -> dict[str, str]:
-    """Monta o system e user prompt do Redator"""
+    """Monta os prompts do Redator com suporte a Tool, histórico e circuit breaker."""
     if chunks_fatiados is None:
         dica_cat = f" (use category='{categoria_sugerida}')" if categoria_sugerida else ""
         contexto_str = (
@@ -47,27 +49,49 @@ def construir_prompt_redator(
             blocos.append(
                 f"[Chunk_ID: {c['chunk_id']} | Subcategoria: {c['subcategory']}]\n"
                 f"- DIRETRIZES_DE_AUTOATENDIMENTO: {c['fatias']['resolucao_n1']}\n"
-                f"- GATILHOS_DE_ESCALONAMENTO_INTERNO (Apenas para decidir se transfere para especialista): {c['fatias']['escalonamento']}"
+                f"- GATILHOS_DE_ESCALONAMENTO_INTERNO: {c['fatias']['escalonamento']}"
             )
         contexto_str = "\n\n".join(blocos)
 
-    bloco_correcao = ""
-    if feedback_auditor:
-        bloco_correcao = (
-            f"<AJUSTE_SOLICITADO_PELO_AUDITOR>\n"
-            f"{feedback_auditor}\n"
-            f"Reescreva a mensagem corrigindo este ponto e mantenha a tag [[FONTE: Chunk_ID]] na última linha.\n"
-            f"</AJUSTE_SOLICITADO_PELO_AUDITOR>\n\n"
+    bloco_historico = ""
+    if historico_conversa:
+        bloco_historico = (
+            f"\n=== HISTÓRICO RECENTE DA CONVERSA ===\n"
+            f"{historico_conversa}\n"
+            f"Instrução de Histórico: Se o cliente relatar na mensagem atual que já tentou os passos "
+            f"ensinados anteriormente e o problema persistiu, NÃO repita o passo a passo; informe que "
+            f"está transferindo o chamado para um especialista.\n"
         )
 
-    user_prompt = (
-        f"<BASE_DE_CONHECIMENTO>\n{contexto_str}\n</BASE_DE_CONHECIMENTO>\n\n"
-        f"{bloco_correcao}"
-        f"<MENSAGEM_DO_CLIENTE>\n{pergunta_cliente}\n</MENSAGEM_DO_CLIENTE>\n\n"
-        f"Escreva a resposta direta para o cliente (com a tag [[FONTE: ...]] na última linha)."
-    )
+    bloco_limite = ""
+    if forcar_escalonamento_limite:
+        chunk_id_ref = (
+            chunks_fatiados[0]["chunk_id"]
+            if chunks_fatiados and len(chunks_fatiados) > 0
+            else "FORA_DE_ESCOPO"
+        )
+        bloco_limite = (
+            f"\n=== [ALERTA DE LIMITE DE TURNOS ATINGIDO - CIRCUIT BREAKER] ===\n"
+            f"O cliente atingiu o limite máximo de interações sobre este mesmo problema sem resolução no N1. "
+            f"É PROIBIDO enviar novos passos técnicos ou fazer novas perguntas. "
+            f"Agradeça a paciência, informe educadamente que está transferindo o atendimento para um "
+            f"especialista da equipe dedicada dar continuidade e encerre com [[FONTE: {chunk_id_ref}]].\n"
+        )
 
-    return {
-        "system_prompt": REDATOR_SYSTEM_PROMPT,
-        "user_prompt": user_prompt,
-    }
+    bloco_feedback = ""
+    if feedback_auditor:
+        bloco_feedback = (
+            f"\n=== CORREÇÃO OBRIGATÓRIA DO AUDITOR ===\n"
+            f"Sua resposta anterior foi reprovada pelo seguinte motivo: {feedback_auditor}\n"
+            f"Corrija imediatamente seguindo o manual.\n"
+        )
+
+    user_prompt = f"""=== BASE DE CONHECIMENTO (MANUAL TÉCNICO) ===
+{contexto_str}
+{bloco_historico}{bloco_limite}{bloco_feedback}
+=== MENSAGEM ATUAL DO CLIENTE ===
+{pergunta_cliente}
+
+Redija a resposta para o cliente e lembre-se de colocar a tag [[FONTE: Chunk_ID]] na última linha:"""
+
+    return {"system_prompt": REDATOR_SYSTEM_PROMPT, "user_prompt": user_prompt}

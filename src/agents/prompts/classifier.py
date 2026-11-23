@@ -5,24 +5,31 @@ CLASSIFIER_SYSTEM_PROMPT = (
 )
 
 
-def construir_prompt_classificador(pergunta_cliente: str) -> dict[str, str]:
-    user_prompt = f"""Classifique o seguinte ticket do cliente: '{pergunta_cliente}'
+# Em src/agents/prompts/classifier.py, adicione a função construir_prompt_classificador:
 
-Regras de Negócio da NexusTech (Siga estritamente):
-- Todo problema de cobrança (duplicada, fatura errada) deve ser classificado inicialmente como N1, pois o cliente tem acesso ao autoatendimento no painel.
-- Problemas técnicos que afetam todos os usuários devem ser N3.
-- Dúvidas gerais sobre a plataforma devem ser N1.
+def construir_prompt_classificador(
+    pergunta_cliente: str,
+    historico_recente: str = "",
+    categoria_anterior: str = "",
+) -> dict[str, str]:
+    contexto_memoria = ""
+    if historico_recente:
+        contexto_memoria = (
+            f"\n[HISTÓRICO RECENTE DA SESSÃO (Categoria Anterior: {categoria_anterior})]\n"
+            f"{historico_recente}\n"
+        )
 
-Exemplos de Classificação:
-Ticket: "I was charged twice for the same month. Here is the receipt."
-Resultado esperado: {{"category": "Billing", "priority": "Media", "initial_level": "N1", "triage_justification": "Cobrança duplicada passível de revisão via autoatendimento no painel."}}
+    user_prompt = f"""Analise a mensagem do cliente e retorne APENAS um objeto JSON válido seguindo o schema:
+{contexto_memoria}
+[MENSAGEM ATUAL DO CLIENTE]:
+{pergunta_cliente}
 
-Ticket: "O sistema inteiro caiu, ninguém consegue logar."
-Resultado esperado: {{"category": "Technical", "priority": "Critica", "initial_level": "N3", "triage_justification": "Indisponibilidade geral afetando múltiplos usuários."}}
-
-Retorne exclusivamente um objeto JSON válido contendo as chaves: "category", "priority", "initial_level" e "triage_justification"."""
-
-    return {
-        "system_prompt": CLASSIFIER_SYSTEM_PROMPT,
-        "user_prompt": user_prompt,
-    }
+REGRAS DE MULTI-TURNO PARA O JSON:
+1. "category": Escolha entre "Technical", "Billing", "Account", "Fraud" ou "General Inquiry". Se a mensagem atual for uma resposta curta ou continuação do HISTÓRICO RECENTE, mantenha a Categoria Anterior ({categoria_anterior or 'N/A'}).
+2. "priority": "Baixa", "Media", "Alta" ou "Critica".
+3. "initial_level": "N1", "N2" ou "N3".
+4. "triage_justification": Explicação curta da classificação.
+5. "is_followup": booleano (true/false). Marque `true` SOMENTE se houver [HISTÓRICO RECENTE] e a mensagem atual tratar do mesmo problema/assunto. Se for o 1º turno ou se o cliente mudou de assunto, marque `false`.
+6. "search_query": string com a pergunta reescrita de forma clara e completa para busca em banco vetorial (ex: se o cliente disse apenas "qual o valor?", reescreva combinando com o assunto do histórico).
+"""
+    return {"system_prompt": CLASSIFIER_SYSTEM_PROMPT, "user_prompt": user_prompt}

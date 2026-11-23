@@ -19,6 +19,14 @@ class TicketClassification(BaseModel):
         default="",
         description="Motivo resumido da classificação em no máximo 2 frases",
     )
+    is_followup: bool = Field(
+        default=False,
+        description="True se a mensagem atual for continuação/dúvida sobre o mesmo problema do turno anterior.",
+    )
+    search_query: str = Field(
+        default="",
+        description="Query limpa e completa otimizada para busca vetorial no PGVector.",
+    )
 
 
 class ContextoRAGSchema(BaseModel):
@@ -27,6 +35,8 @@ class ContextoRAGSchema(BaseModel):
     subcategoria: str
     score_similaridade: float
     regra_escalonamento_aplicada: str
+    reutilizado_do_cache: bool = Field(default=False)
+    turno_no_topico: int = Field(default=1)
 
 
 class AtendimentoRedatorSchema(BaseModel):

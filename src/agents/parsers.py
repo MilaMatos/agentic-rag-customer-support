@@ -84,6 +84,8 @@ def extrair_json_classificacao(resposta_llm: str) -> dict[str, Any]:
         "priority": prio,
         "initial_level": nivel,
         "triage_justification": str(justificativa),
+        "is_followup": bool(dados.get("is_followup", False)),
+        "search_query": str(dados.get("search_query", "")),
     }
 
 
