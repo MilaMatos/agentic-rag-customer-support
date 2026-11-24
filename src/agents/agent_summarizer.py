@@ -56,3 +56,35 @@ class AgenteResumo:
         crew.kickoff()
 
         return limpar_texto_resumo(task.output.raw)
+
+
+    def resumir_topico(
+        self,
+        categoria: str,
+        transcricao_topico: str,
+        resumo_anterior: str = "",
+    ) -> str:
+        bloco_previo = f"Resumo anterior:\n{resumo_anterior}\n\n" if resumo_anterior else ""
+        prompt = (
+            f"Compacte a conversa abaixo sobre o tópico '{categoria}' em 2 a 4 frases objetivas.\n"
+            f"Preserve fatos técnicos, sintomas, testes já feitos pelo cliente (incluindo confirmações de sim/não) e pendências.\n"
+            f"Ignore saudações e preenchimentos sem valor técnico.\n\n"
+            f"{bloco_previo}Novas mensagens:\n{transcricao_topico}"
+        )
+
+        agente = Agent(
+            role="Analista de Memória Conversacional",
+            goal="Condensar histórico de um tópico preservando todos os fatos técnicos.",
+            backstory="Você resume atendimentos de suporte técnico de forma concisa, fiel e sem inventar dados.",
+            llm=self.llm,
+            verbose=False,
+            allow_delegation=False,
+        )
+        task = Task(
+            description=prompt,
+            expected_output="Resumo factual curto (2 a 4 frases) em português.",
+            agent=agente,
+        )
+        crew = Crew(agents=[agente], tasks=[task], process=Process.sequential, verbose=False)
+        crew.kickoff()
+        return limpar_texto_resumo(task.output.raw)

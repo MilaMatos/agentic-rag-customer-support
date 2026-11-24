@@ -93,21 +93,9 @@ class NexusRetriever:
             "escalonamento": esc.group(1).strip() if esc else "Regra não encontrada.",
         }
 
-    def buscar_chunks(
-        self,
-        query: str,
-        k: int = 1,
-        category_filter: Optional[str] = None,
-        min_similarity: float = 0.30,
+    def _processar_resultados(
+        self, resultados: list[tuple[Any, float]], min_similarity: float
     ) -> list[dict[str, Any]]:
-        """
-        Realiza busca vetorial filtrada por categoria e aplica nota de corte de similaridade
-        """
-        filtro = {"category": category_filter} if category_filter else None
-        resultados = self.vector_store.similarity_search_with_score(
-            query=query, k=k, filter=filtro
-        )
-
         chunks_processados = []
         for rank, (doc, distancia) in enumerate(resultados, start=1):
             score = round(max(0.0, 1.0 - float(distancia)), 4)
@@ -115,16 +103,39 @@ class NexusRetriever:
                 continue
 
             meta = doc.metadata or {}
-            fatias = self._fatiar_conteudo(doc.page_content)
-
             chunks_processados.append({
                 "rank": rank,
                 "chunk_id": meta.get("chunk_id", "N/A"),
                 "category": meta.get("category", "N/A"),
                 "subcategory": meta.get("subcategory", "N/A"),
                 "similarity_score": score,
-                "fatias": fatias,
+                "fatias": self._fatiar_conteudo(doc.page_content),
                 "conteudo_original": doc.page_content,
             })
-
         return chunks_processados
+
+    def buscar_chunks(
+        self,
+        query: str,
+        k: int = 1,
+        category_filter: Optional[str] = None,
+        min_similarity: float = 0.30,
+    ) -> list[dict[str, Any]]:
+        filtro = {"category": category_filter} if category_filter else None
+        resultados = self.vector_store.similarity_search_with_score(
+            query=query, k=k, filter=filtro
+        )
+        return self._processar_resultados(resultados, min_similarity)
+
+    def buscar_chunks_por_vetor(
+        self,
+        embedding: list[float],
+        k: int = 1,
+        category_filter: Optional[str] = None,
+        min_similarity: float = 0.30,
+    ) -> list[dict[str, Any]]:
+        filtro = {"category": category_filter} if category_filter else None
+        resultados = self.vector_store.similarity_search_with_score_by_vector(
+            embedding=embedding, k=k, filter=filtro
+        )
+        return self._processar_resultados(resultados, min_similarity)
