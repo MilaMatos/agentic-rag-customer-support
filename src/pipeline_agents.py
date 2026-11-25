@@ -474,6 +474,11 @@ class NexusSupportPipeline:
         if pendentes:
             wait(pendentes, timeout=timeout)
 
+    def shutdown(self, wait_pending: bool = True) -> None:
+        if wait_pending:
+            self.aguardar_background()
+        self._bg_executor.shutdown(wait=wait_pending)
+
     def gerar_sugestao_turno(
         self,
         pergunta_cliente: str,

@@ -131,8 +131,11 @@ class SessionRepository:
                 sessao = ChatSessionDB(
                     session_id=sugestao.session_id,
                     tenant_id=sugestao.tenant_id,
+                    turno_global=0,
+                    turnos_no_topico_atual=0,
                 )
                 db.add(sessao)
+                db.flush()
 
             sessao.pending_suggestion = sugestao.model_dump()
             sessao.status = "AGUARDANDO_N1"
@@ -141,7 +144,7 @@ class SessionRepository:
                 suggestion_id=sugestao.suggestion_id,
                 session_id=sugestao.session_id,
                 tenant_id=sugestao.tenant_id,
-                turn_number=sessao.turno_global + 1,
+                turn_number=(sessao.turno_global or 0) + 1,
                 ai_suggested_text=sugestao.mensagem_sugerida,
                 category=caixa.triagem_inicial.category,
                 chunk_id=caixa.rag_contexto.chunk_id,
@@ -318,3 +321,103 @@ class SessionRepository:
             autor = "CLIENTE" if m.sender_role == "CLIENT" else "ATENDENTE N1"
             linhas.append(f"{autor}: {m.content}")
         return "\n".join(linhas)
+
+
+
+    def listar_sessoes(
+        self,
+        tenant_id: str = "default",
+        status: Optional[str] = None,
+        limite: int = 50,
+    ) -> list[dict[str, Any]]:
+        with self._session_factory() as db:
+            stmt = select(ChatSessionDB).where(ChatSessionDB.tenant_id == tenant_id)
+            if status:
+                stmt = stmt.where(ChatSessionDB.status == status)
+            stmt = stmt.order_by(ChatSessionDB.updated_at.desc()).limit(limite)
+
+            sessoes = db.execute(stmt).scalars().all()
+            return [self._serializar_sessao(s) for s in sessoes]
+
+    def listar_fila_especialista(
+        self,
+        tenant_id: str = "default",
+        limite: int = 50,
+    ) -> list[dict[str, Any]]:
+        with self._session_factory() as db:
+            stmt = (
+                select(ChatSessionDB)
+                .where(
+                    ChatSessionDB.tenant_id == tenant_id,
+                    ChatSessionDB.status == "ESCALADA_N2",
+                )
+                .order_by(ChatSessionDB.escalated_at.desc(), ChatSessionDB.updated_at.desc())
+                .limit(limite)
+            )
+            sessoes = db.execute(stmt).scalars().all()
+            return [self._serializar_sessao(s) for s in sessoes]
+
+    def listar_mensagens_sessao(
+        self,
+        session_id: str,
+        tenant_id: str = "default",
+    ) -> list[dict[str, Any]]:
+        with self._session_factory() as db:
+            stmt = (
+                select(ChatMessageDB)
+                .where(
+                    ChatMessageDB.session_id == session_id,
+                    ChatMessageDB.tenant_id == tenant_id,
+                )
+                .order_by(ChatMessageDB.turn_number.asc(), ChatMessageDB.created_at.asc())
+            )
+            mensagens = db.execute(stmt).scalars().all()
+            return [
+                {
+                    "message_id": m.message_id,
+                    "turn_number": m.turn_number,
+                    "sender_role": m.sender_role,
+                    "topic_category": m.topic_category,
+                    "chunk_id": m.chunk_id,
+                    "content": m.content,
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                }
+                for m in mensagens
+            ]
+
+    def obter_detalhe_sessao(
+        self,
+        session_id: str,
+        tenant_id: str = "default",
+    ) -> Optional[dict[str, Any]]:
+        with self._session_factory() as db:
+            sessao = db.execute(
+                select(ChatSessionDB).where(
+                    ChatSessionDB.session_id == session_id,
+                    ChatSessionDB.tenant_id == tenant_id,
+                )
+            ).scalar_one_or_none()
+            if not sessao:
+                return None
+
+            dados = self._serializar_sessao(sessao)
+            dados["pending_suggestion"] = sessao.pending_suggestion
+            dados["mensagens"] = self.listar_mensagens_sessao(session_id, tenant_id=tenant_id)
+            return dados
+
+    @staticmethod
+    def _serializar_sessao(s: ChatSessionDB) -> dict[str, Any]:
+        return {
+            "session_id": s.session_id,
+            "tenant_id": s.tenant_id,
+            "status": s.status,
+            "turno_global": s.turno_global,
+            "turnos_no_topico_atual": s.turnos_no_topico_atual,
+            "categoria_atual": s.categoria_atual,
+            "handoff_summary": s.handoff_summary,
+            "tem_sugestao_pendente": bool(s.pending_suggestion),
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+            "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+            "escalated_at": s.escalated_at.isoformat() if s.escalated_at else None,
+            "closed_at": s.closed_at.isoformat() if s.closed_at else None,
+        }

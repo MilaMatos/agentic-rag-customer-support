@@ -13,6 +13,7 @@ from src.agents.schemas import (
 )
 from src.db.connection import criar_tabelas
 from src.db.session_repo import SessionRepository
+from src.agents.retry import executar_crew_com_retry
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -143,5 +144,65 @@ def test_ciclo_memoria_topicos_e_encerramento():
         assert sessao_final.topic_contexts is None
         assert sessao_final.pending_suggestion is None
         assert "dashboard" in repo.obter_transcricao_completa(sid, tenant_id=tenant)
+    finally:
+        repo.limpar_sessao_teste(sid)   
+
+def test_retry_transitorio_crew():
+    estado = {"tentativas": 0}
+
+    class CrewInstavel:
+        def kickoff(self):
+            estado["tentativas"] += 1
+            if estado["tentativas"] == 1:
+                raise TimeoutError("timeout simulado NIM")
+            return "ok"
+
+    assert executar_crew_com_retry(CrewInstavel(), max_tentativas=2, espera_s=0.01) == "ok"
+    assert estado["tentativas"] == 2
+
+
+def test_consultas_leitura_api_e_fila_especialista():
+    repo = SessionRepository()
+    sid = f"TEST-READ-{uuid4().hex[:8]}"
+    tenant = f"t_{uuid4().hex[:6]}"
+
+    try:
+        sug = _montar_sugestao(
+            sid, tenant, "Technical", "MAN-TECH-001-SEC-03",
+            "Sistema fora do ar.", "Verificando incidente.",
+        )
+        repo.salvar_sugestao_pendente(sug)
+
+        sessoes = repo.listar_sessoes(tenant_id=tenant)
+        assert len(sessoes) == 1
+        assert sessoes[0]["tem_sugestao_pendente"] is True
+
+        conf = ConfirmacaoHumanaSchema(
+            suggestion_id=sug.suggestion_id,
+            acao_humana="ESCALADA_N2",
+            mensagem_final_enviada="Encaminhado ao especialista N2.",
+        )
+        res = ResultadoConfirmacaoSchema(
+            suggestion_id=sug.suggestion_id,
+            session_id=sid,
+            tenant_id=tenant,
+            acao_humana="ESCALADA_N2",
+            atendente_id="n1_01",
+            mensagem_sugerida=sug.mensagem_sugerida,
+            mensagem_final_enviada=conf.mensagem_final_enviada,
+            was_edited=True,
+            edit_ratio=0.5,
+            status_sessao="ESCALADA_N2",
+            handoff_summary="Ação Tomada: N1 checado.\nPróximo Passo: Analisar N2.",
+        )
+        repo.confirmar_turno(sug, conf, res)
+
+        fila_n2 = repo.listar_fila_especialista(tenant_id=tenant)
+        assert len(fila_n2) == 1
+        assert fila_n2[0]["handoff_summary"] is not None
+
+        detalhe = repo.obter_detalhe_sessao(sid, tenant_id=tenant)
+        assert detalhe is not None
+        assert len(detalhe["mensagens"]) == 2
     finally:
         repo.limpar_sessao_teste(sid)
