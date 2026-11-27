@@ -16,5 +16,22 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build: .
+    container_name: nexus_api
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-adminpassword}@pgvector:5432/${POSTGRES_DB:-nexus_knowledge}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./data:/app/data
+    depends_on:
+      pgvector:
+        condition: service_healthy
+
 volumes:
   pgdata:

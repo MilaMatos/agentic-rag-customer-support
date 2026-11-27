@@ -206,3 +206,54 @@ def test_consultas_leitura_api_e_fila_especialista():
         assert len(detalhe["mensagens"]) == 2
     finally:
         repo.limpar_sessao_teste(sid)
+
+def test_fallback_llm_acionado_apos_esgotar_retries():
+    chamadas = []
+
+    class DummyAgent:
+        def __init__(self, llm):
+            self.llm = llm
+
+    class CrewComFallback:
+        def __init__(self):
+            self.agents = [DummyAgent("modelo_principal")]
+
+        def kickoff(self):
+            modelo_atual = self.agents[0].llm
+            chamadas.append(modelo_atual)
+            if modelo_atual == "modelo_principal":
+                raise TimeoutError("timeout no modelo principal")
+            return "ok_fallback"
+
+    crew = CrewComFallback()
+    res = executar_crew_com_retry(
+        crew,
+        max_tentativas=2,
+        espera_s=0.01,
+        fallback_llm="modelo_reserva",
+    )
+    assert res == "ok_fallback"
+    assert chamadas == ["modelo_principal", "modelo_principal", "modelo_reserva"]
+
+
+def test_erro_autenticacao_nao_aciona_fallback():
+    class AuthError(Exception):
+        status_code = 401
+
+    class DummyAgent:
+        llm = "modelo_principal"
+
+    class CrewAuthFail:
+        agents = [DummyAgent()]
+
+        def kickoff(self):
+            raise AuthError("unauthorized")
+
+    with pytest.raises(AuthError):
+        executar_crew_com_retry(
+            CrewAuthFail(),
+            max_tentativas=2,
+            espera_s=0.01,
+            fallback_llm="modelo_reserva",
+        )
+    assert CrewAuthFail.agents[0].llm == "modelo_principal"

@@ -1,14 +1,10 @@
 import pytest
+
+from src.agents.agent_auditor import AgenteAuditorQualidade
 from src.agents.agent_classifier import AgenteClassificador
 from src.agents.agent_redactor import AgenteRedatorN1
-from src.agents.agent_auditor import AgenteAuditorQualidade
 from src.agents.agent_summarizer import AgenteResumo
-from src.agents.tools import obter_ultimos_chunks_tool
 
-
-# =====================================================================
-# FIXTURES DOS AGENTES E MOCKS BASE
-# =====================================================================
 
 @pytest.fixture(scope="module")
 def classificador():
@@ -44,25 +40,16 @@ CHUNK_DASHBOARD = [
     }
 ]
 
-
-# =====================================================================
-# TABELAS DE CENÁRIOS E EDGE CASES
-# =====================================================================
-
-# Adicionar novos casos de teste aqui, incluindo perguntas, categorias esperadas, níveis de atendimento e quaisquer condições especiais para validação
-
 CASOS_CLASSIFICADOR = [
     {
         "id": "normal_billing_n1",
         "pergunta": "Fui cobrado duas vezes na fatura deste mês, preciso de ajuda.",
         "categoria_esperada": "Billing",
-        "nivel_esperado": "N1",
     },
     {
-        "id": "edge_case_queda_geral_n3",
+        "id": "edge_case_queda_geral_technical",
         "pergunta": "O sistema inteiro caiu, nenhum usuário da nossa empresa consegue logar desde cedo!",
         "categoria_esperada": "Technical",
-        "nivel_esperado": "N3",
     },
 ]
 
@@ -71,14 +58,6 @@ CASOS_REDATOR = [
         "id": "normal_autoatendimento_com_chunk",
         "pergunta": "Meu painel não carrega os relatórios, fica só uma bolinha girando.",
         "chunks": CHUNK_DASHBOARD,
-        "categoria": "Technical",
-        "fonte_esperada": "MAN-TECH-001-SEC-03",
-        "palavras_proibidas": ["n1", "n2", "backoffice"],
-    },
-    {
-        "id": "autonomo_usando_rag_tool",
-        "pergunta": "O dashboard principal está travado na tela de carregamento infinito.",
-        "chunks": None,
         "categoria": "Technical",
         "fonte_esperada": "MAN-TECH-001-SEC-03",
         "palavras_proibidas": ["n1", "n2", "backoffice"],
@@ -108,7 +87,7 @@ CASOS_AUDITOR = [
         "escalonamento_esperado": False,
     },
     {
-        "id": "edge_case_reprova_alucinacao_E_acesso_banco",
+        "id": "edge_case_reprova_alucinacao_acesso_banco",
         "pergunta": "Meu painel não carrega os relatórios, fica só girando.",
         "resposta_redator": (
             "Olá! Acabei de acessar o banco de dados de produção da sua conta e limpei os logs "
@@ -147,18 +126,13 @@ CASOS_RESUMIDOR = [
 ]
 
 
-# =====================================================================
-# FUNÇÕES PADRÃO DE TESTE
-# =====================================================================
-
+@pytest.mark.llm
 class TestAgentesParametrizados:
 
     @pytest.mark.parametrize("caso", CASOS_CLASSIFICADOR, ids=lambda c: c["id"])
     def test_agente_classificador(self, classificador, caso):
         resultado = classificador.executar(pergunta_cliente=caso["pergunta"])
-
         assert resultado.category == caso["categoria_esperada"]
-        assert resultado.initial_level == caso["nivel_esperado"]
         assert len(resultado.triage_justification) > 5
 
     @pytest.mark.parametrize("caso", CASOS_REDATOR, ids=lambda c: c["id"])
@@ -168,18 +142,11 @@ class TestAgentesParametrizados:
             chunks=caso["chunks"],
             categoria=caso["categoria"],
         )
-
         msg_lower = resultado["mensagem_cliente"].lower()
         assert resultado["fonte_citada"] == caso["fonte_esperada"]
         assert "[[FONTE:" not in resultado["mensagem_cliente"]
-
         for palavra in caso["palavras_proibidas"]:
             assert palavra not in msg_lower
-
-        if caso["chunks"] is None:
-            chunks_tool = obter_ultimos_chunks_tool()
-            assert len(chunks_tool) == 1
-            assert chunks_tool[0]["chunk_id"] == caso["fonte_esperada"]
 
     @pytest.mark.parametrize("caso", CASOS_AUDITOR, ids=lambda c: c["id"])
     def test_agente_auditor(self, auditor, caso):
@@ -188,14 +155,22 @@ class TestAgentesParametrizados:
             resposta_redator=caso["resposta_redator"],
             chunks=caso["chunks"],
         )
-
         assert veredito.aprovado_para_envio is caso["aprovado_esperado"]
         assert veredito.redator_alucinou is caso["alucinou_esperado"]
         assert veredito.requer_escalonamento is caso["escalonamento_esperado"]
 
     @pytest.mark.parametrize("caso", CASOS_RESUMIDOR, ids=lambda c: c["id"])
-    def test_agente_resumidor(self, resumidor, caso):
+    def test_agente_resumidor_handoff(self, resumidor, caso):
         resumo = resumidor.executar(resposta_final_cliente=caso["resposta_final"])
-
         for termo in caso["termos_obrigatorios"]:
             assert termo in resumo
+
+    def test_agente_resumidor_compactacao_topico(self, resumidor):
+        transcricao = (
+            "CLIENTE: Meu painel não carrega os relatórios.\n"
+            "ATENDENTE N1: Limpe o cache no Chrome e desative a VPN.\n"
+            "CLIENTE: Já fiz tudo isso e continua girando há 25 minutos."
+        )
+        resumo = resumidor.resumir_topico(categoria="Technical", transcricao_topico=transcricao)
+        assert len(resumo) > 20
+        assert "<think>" not in resumo

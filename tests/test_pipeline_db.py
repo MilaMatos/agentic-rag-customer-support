@@ -1,6 +1,7 @@
 import time
 from uuid import uuid4
 import pytest
+import threading
 
 from src.agents.schemas import (
     ConfirmacaoHumanaSchema,
@@ -58,16 +59,18 @@ def test_turno1_embedding_especulativo_em_paralelo(monkeypatch):
     sid = f"TEST-PAR-{uuid4().hex[:8]}"
 
     chamadas = {"por_vetor": 0, "padrao": 0}
+    barreira = threading.Barrier(2, timeout=1.0)
 
     def mock_classificador(**kwargs):
-        time.sleep(0.15)
+        barreira.wait()
         return TicketClassification(category="Technical", is_followup=False)
 
     def mock_embed(texto):
-        time.sleep(0.15)
+        barreira.wait()
         return [0.1] * 8
 
     def mock_por_vetor(**kwargs):
+        assert kwargs.get("category_filter") is None
         chamadas["por_vetor"] += 1
         return CHUNK_TECH
 
@@ -91,17 +94,14 @@ def test_turno1_embedding_especulativo_em_paralelo(monkeypatch):
     monkeypatch.setattr(pipeline.auditor, "executar", lambda **kw: _veredito_ok())
 
     try:
-        t0 = time.perf_counter()
         sug = pipeline.gerar_sugestao_db(sid, "Meu dashboard travou", tenant_id="t_par")
-        duracao = time.perf_counter() - t0
 
-        assert duracao < 0.28
         assert chamadas["por_vetor"] == 1
         assert chamadas["padrao"] == 0
         assert sug.caixa_rastreabilidade.rag_contexto.chunk_id == "MAN-TECH-001-SEC-03"
     finally:
+        pipeline.shutdown()
         repo.limpar_sessao_teste(sid)
-
 
 def test_memoria_por_topico_compactacao_bg_e_handoff(monkeypatch):
     repo = SessionRepository(max_chars_topico=60)
@@ -204,3 +204,4 @@ def test_memoria_por_topico_compactacao_bg_e_handoff(monkeypatch):
         assert sessao_final.topic_contexts is None
     finally:
         repo.limpar_sessao_teste(sid)
+        pipeline.shutdown()
