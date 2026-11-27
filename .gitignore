@@ -1,9 +1,19 @@
+# Python
 venv/
 __pycache__/
+*.pyc
+.pytest_cache/
 .env
+
+# Dados e logs
 data/raw/*
 !data/raw/.gitkeep
 *_log.json
 *_log.txt
 sandbox/
 logs/
+
+# Frontend (React / Vite)
+node_modules/
+frontend-app/dist/
+frontend-app/.vite/

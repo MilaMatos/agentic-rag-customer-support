@@ -382,7 +382,7 @@ class NexusSupportPipeline:
         confirmacao: ConfirmacaoHumanaSchema,
         tenant_id: str = "default",
     ) -> ResultadoConfirmacaoSchema:
-        """Fase 2 HITL (PostgreSQL): efetiva envio, resume no handoff e compacta tópicos em background."""
+        """Fase 2 HITL (PostgreSQL): efetiva envio e resume no handoff N2."""
         sugestao = self.session_repo.obter_sugestao_pendente(
             session_id=session_id,
             suggestion_id=confirmacao.suggestion_id,
@@ -417,14 +417,7 @@ class NexusSupportPipeline:
             handoff_summary=handoff_summary,
         )
 
-        categoria_anterior = self.session_repo.confirmar_turno(sugestao, confirmacao, resultado)
-
-        if status_sessao == "ABERTA":
-            cat_atual = sugestao.caixa_rastreabilidade.triagem_inicial.category
-            self._agendar_compactacao_se_necessario(session_id, cat_atual, tenant_id)
-            if categoria_anterior:
-                self._agendar_compactacao_se_necessario(session_id, categoria_anterior, tenant_id)
-
+        self.session_repo.confirmar_turno(sugestao, confirmacao, resultado)
         return resultado
 
     def encerrar_sessao_db(self, session_id: str, tenant_id: str = "default") -> None:

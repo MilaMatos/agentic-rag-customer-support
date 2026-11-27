@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexusTech Support Copilot — Orquestração, Memória e API Backend</title>
+  <style>
+    :root {
+      --navy-950: #071226;
+      --navy-900: #0B1B36;
+      --navy-800: #132A4F;
+      --blue-600: #1D4ED8;
+      --blue-500: #2563EB;
+      --cyan-500: #0EA5E9;
+      --cyan-400: #38BDF8;
+      --emerald-600: #059669;
+      --emerald-100: #D1FAE5;
+      --amber-600: #D97706;
+      --amber-100: #FEF3C7;
+      --purple-600: #7C3AED;
+      --purple-100: #EDE9FE;
+      --rose-600: #E11D48;
+      --rose-100: #FFE4E6;
+      --slate-900: #0F172A;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748B;
+      --slate-300: #CBD5E1;
+      --slate-200: #E2E8F0;
+      --slate-100: #F1F5F9;
+      --slate-50: #F8FAFC;
+      --white: #FFFFFF;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 20px 48px rgba(7, 18, 38, 0.18);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--font-sans);
+      background: var(--navy-950);
+      color: var(--slate-900);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .progress-track {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(148, 163, 184, 0.2);
+      z-index: 100;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue-500), var(--cyan-400));
+      width: 10%;
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 44px 72px 74px;
+      background: var(--slate-50);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(28px);
+      transition: opacity 0.38s ease, transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.38s;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+      z-index: 10;
+    }
+
+    .slide.prev { transform: translateX(-28px); }
+
+    .slide-inner {
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .slide.dark {
+      background:
+        radial-gradient(circle at 82% 18%, rgba(14, 165, 233, 0.22), transparent 42%),
+        radial-gradient(circle at 14% 86%, rgba(37, 99, 235, 0.24), transparent 45%),
+        linear-gradient(135deg, var(--navy-950) 0%, var(--navy-900) 55%, var(--navy-800) 100%);
+      color: var(--white);
+    }
+
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    .slide-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--slate-200);
+      padding-bottom: 14px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--blue-600);
+      margin-bottom: 5px;
+    }
+
+    .eyebrow-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan-500);
+    }
+
+    .slide-title {
+      font-size: clamp(26px, 2.7vw, 35px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--slate-900);
+      line-height: 1.15;
+    }
+
+    .slide-subtitle {
+      font-size: 14.5px;
+      color: var(--slate-600);
+      margin-top: 5px;
+      line-height: 1.45;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-blue { background: #DBEAFE; color: #1E40AF; }
+    .badge-amber { background: var(--amber-100); color: #92400E; }
+    .badge-emerald { background: var(--emerald-100); color: #065F46; }
+    .badge-slate { background: var(--slate-200); color: var(--slate-700); }
+    .badge-purple { background: var(--purple-100); color: #5B21B6; }
+
+    /* Cover */
+    .cover-wrap { position: relative; z-index: 2; max-width: 960px; }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue-500), var(--cyan-400));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
+      font-weight: 800;
+      font-size: 18px;
+      color: white;
+      letter-spacing: -0.04em;
+    }
+
+    .brand-name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #93C5FD;
+    }
+
+    .cover-title {
+      font-size: clamp(40px, 4.8vw, 62px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+      color: var(--white);
+      margin-bottom: 20px;
+    }
+
+    .cover-title span {
+      background: linear-gradient(90deg, #60A5FA, #38BDF8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .cover-subtitle {
+      font-size: clamp(20px, 2.2vw, 28px);
+      font-weight: 500;
+      color: #CBD5E1;
+      line-height: 1.35;
+      margin-bottom: 40px;
+    }
+
+    .cover-divider {
+      width: 88px;
+      height: 4px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--blue-500), var(--cyan-400));
+      margin-bottom: 28px;
+    }
+
+    .cover-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 28px;
+      font-size: 14px;
+      color: #94A3B8;
+    }
+
+    .cover-meta strong { color: #E2E8F0; font-weight: 600; }
+
+    /* Cards & Grids */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+    .grid-asymmetric { display: grid; grid-template-columns: 1.32fr 0.88fr; gap: 20px; }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-accent-top { border-top: 4px solid var(--blue-500); }
+    .card-accent-cyan { border-top: 4px solid var(--cyan-500); }
+    .card-accent-emerald { border-top: 4px solid var(--emerald-600); }
+    .card-accent-amber { border-top: 4px solid var(--amber-600); }
+
+    .card-icon-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      background: #EFF6FF;
+      color: var(--blue-600);
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--slate-900);
+      letter-spacing: -0.01em;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 14px;
+      line-height: 1.48;
+      color: var(--slate-700);
+    }
+
+    .bullet-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--blue-500);
+    }
+
+    .bullet-list.cyan li::before { background: var(--cyan-500); }
+    .bullet-list.emerald li::before { background: var(--emerald-600); }
+    .bullet-list.amber li::before { background: var(--amber-600); }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.86em;
+      background: var(--slate-100);
+      color: var(--navy-800);
+      padding: 2px 6px;
+      border-radius: 5px;
+      border: 1px solid var(--slate-200);
+    }
+
+    .note-strip {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-left: 4px solid var(--blue-600);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 13.5px;
+      color: #1E3A8A;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      line-height: 1.45;
+    }
+
+    /* Slide 3: Categorized Animated Flow */
+    .flow-shell {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 18px 22px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .flow-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .step-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .step-btn {
+      border: 1px solid var(--slate-200);
+      background: var(--slate-50);
+      color: var(--slate-700);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .step-btn:hover { border-color: var(--blue-500); color: var(--blue-600); }
+
+    .step-btn.active {
+      background: var(--navy-900);
+      color: var(--white);
+      border-color: var(--navy-900);
+      box-shadow: 0 4px 12px rgba(11, 27, 54, 0.2);
+    }
+
+    .play-toggle {
+      border: 1px solid var(--slate-300);
+      background: var(--white);
+      color: var(--slate-700);
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .play-toggle:hover { border-color: var(--blue-500); color: var(--blue-600); }
+
+    /* Category Legend */
+    .flow-legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      padding: 6px 12px;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--slate-700);
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 2px solid transparent;
+    }
+    .sw-human { background: #ECFDF5; border-color: #059669; }
+    .sw-agent { background: #EFF6FF; border-color: #2563EB; }
+    .sw-tool  { background: #FFFBEB; border-color: #D97706; }
+    .sw-mem   { background: #F5F3FF; border-color: #7C3AED; }
+    .sw-cond  {
+      background: #EFF6FF;
+      border: 2px dashed #2563EB;
+      animation: swatchBlink 1.3s ease-in-out infinite;
+    }
+
+    @keyframes swatchBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .flow-svg-box {
+      width: 100%;
+      background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      overflow: hidden;
+    }
+
+    .flow-svg { width: 100%; height: auto; display: block; }
+
+    .svg-node { transition: opacity 0.35s ease; }
+
+    .svg-node rect {
+      fill: #FFFFFF;
+      stroke: #CBD5E1;
+      stroke-width: 1.8;
+      transition: all 0.35s ease;
+    }
+
+    .svg-node text.n-title {
+      font-size: 13px;
+      font-weight: 700;
+      fill: #1E293B;
+      font-family: var(--font-sans);
+    }
+
+    .svg-node text.n-sub {
+      font-size: 10.5px;
+      font-weight: 500;
+      fill: #64748B;
+      font-family: var(--font-sans);
+    }
+
+    .svg-node text.n-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-family: var(--font-sans);
+    }
+
+    /* Base subtle category tint even when dim */
+    .svg-node.cat-human rect  { stroke: #A7F3D0; fill: #F0FDF4; }
+    .svg-node.cat-agent rect  { stroke: #BFDBFE; fill: #F8FAFC; }
+    .svg-node.cat-tool rect   { stroke: #FDE68A; fill: #FFFDF5; }
+    .svg-node.cat-memory rect { stroke: #DDD6FE; fill: #FAF5FF; }
+
+    .svg-node.cat-human text.n-tag  { fill: #059669; }
+    .svg-node.cat-agent text.n-tag  { fill: #2563EB; }
+    .svg-node.cat-tool text.n-tag   { fill: #D97706; }
+    .svg-node.cat-memory text.n-tag { fill: #7C3AED; }
+
+    /* Active states strictly follow each node's category color */
+    .svg-node.cat-human.lit rect {
+      fill: #ECFDF5;
+      stroke: #059669;
+      stroke-width: 2.8;
+      filter: drop-shadow(0 4px 10px rgba(5, 150, 105, 0.24));
+    }
+
+    .svg-node.cat-agent.lit rect {
+      fill: #EFF6FF;
+      stroke: #2563EB;
+      stroke-width: 2.8;
+      filter: drop-shadow(0 4px 10px rgba(37, 99, 235, 0.24));
+    }
+
+    .svg-node.cat-tool.lit rect {
+      fill: #FFFBEB;
+      stroke: #D97706;
+      stroke-width: 2.8;
+      filter: drop-shadow(0 4px 10px rgba(217, 119, 6, 0.24));
+    }
+
+    .svg-node.cat-memory.lit rect {
+      fill: #F5F3FF;
+      stroke: #7C3AED;
+      stroke-width: 2.8;
+      filter: drop-shadow(0 4px 10px rgba(124, 58, 237, 0.24));
+    }
+
+    /* Conditional pulse for Summarizer on Novo Topico */
+    .svg-node.cat-agent.lit-conditional {
+      opacity: 1;
+      animation: condPulse 1.35s ease-in-out infinite;
+    }
+    .svg-node.cat-agent.lit-conditional rect {
+      fill: #EFF6FF;
+      stroke: #2563EB;
+      stroke-width: 2.6;
+      stroke-dasharray: 7 4;
+      filter: drop-shadow(0 0 12px rgba(37, 99, 235, 0.36));
+    }
+
+    @keyframes condPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.42; }
+    }
+
+    .svg-node.dim { opacity: 0.34; }
+
+    .svg-edge {
+      fill: none;
+      stroke: #CBD5E1;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      transition: all 0.35s ease;
+    }
+
+    .svg-edge.active-blue {
+      stroke: #2563EB;
+      stroke-width: 3;
+      stroke-dasharray: 8 6;
+      animation: flowDash 0.9s linear infinite;
+    }
+    .svg-edge.active-green {
+      stroke: #059669;
+      stroke-width: 3;
+      stroke-dasharray: 8 6;
+      animation: flowDash 0.9s linear infinite;
+    }
+    .svg-edge.active-amber {
+      stroke: #D97706;
+      stroke-width: 3;
+      stroke-dasharray: 8 6;
+      animation: flowDash 0.9s linear infinite;
+    }
+    .svg-edge.active-purple {
+      stroke: #7C3AED;
+      stroke-width: 3;
+      stroke-dasharray: 8 6;
+      animation: flowDash 0.9s linear infinite;
+    }
+    .svg-edge.active-cond {
+      stroke: #2563EB;
+      stroke-width: 2.8;
+      stroke-dasharray: 5 6;
+      animation: flowDash 1.1s linear infinite, condPulse 1.35s ease-in-out infinite;
+    }
+
+    @keyframes flowDash { to { stroke-dashoffset: -28; } }
+
+    .flow-caption {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--navy-900);
+      color: var(--white);
+      border-radius: var(--radius-md);
+      padding: 13px 18px;
+    }
+
+    .flow-caption-text { font-size: 13.8px; line-height: 1.45; color: #E2E8F0; }
+    .flow-caption-text strong { color: var(--cyan-400); }
+
+    .flow-metric-pill {
+      background: rgba(56, 189, 248, 0.16);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #BAE6FD;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* Slide 4: Memory Table & References */
+    .table-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+    table.data-table thead th {
+      background: var(--navy-900);
+      color: var(--white);
+      text-align: left;
+      padding: 13px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    table.data-table tbody td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--slate-200);
+      color: var(--slate-700);
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    table.data-table tbody tr:last-child td { border-bottom: none; }
+    table.data-table tbody tr:nth-child(even) { background: #F8FAFC; }
+
+    .role-tag {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .tag-semantic { background: #E0F2FE; color: #0369A1; }
+    .tag-working { background: #FEF3C7; color: #92400E; }
+    .tag-episodic { background: #DBEAFE; color: #1E40AF; }
+    .tag-audit { background: #D1FAE5; color: #065F46; }
+
+    .refs-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 4px;
+    }
+
+    .refs-label { font-size: 12.5px; font-weight: 600; color: var(--slate-500); }
+    .refs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .ref-chip {
+      border: 1px solid #BFDBFE;
+      background: var(--white);
+      color: var(--blue-600);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .ref-chip:hover {
+      background: var(--blue-600);
+      color: var(--white);
+      border-color: var(--blue-600);
+      transform: translateY(-1px);
+    }
+
+    /* Reference Popover Modal */
+    .ref-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 18, 38, 0.52);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      padding: 24px;
+    }
+    .ref-modal-backdrop.open { display: flex; }
+
+    .ref-modal {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      max-width: 560px;
+      width: 100%;
+      padding: 26px 28px;
+      box-shadow: var(--shadow-lg);
+      border-top: 4px solid var(--blue-600);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ref-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .ref-modal-title { font-size: 18px; font-weight: 800; color: var(--slate-900); }
+    .ref-modal-close {
+      border: none;
+      background: var(--slate-100);
+      color: var(--slate-700);
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .ref-modal-body { font-size: 14.5px; line-height: 1.55; color: var(--slate-700); }
+    .ref-modal-apply {
+      background: #EFF6FF;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13.5px;
+      color: #1E3A8A;
+      line-height: 1.45;
+    }
+    .ref-modal-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue-600);
+      text-decoration: none;
+    }
+    .ref-modal-link:hover { text-decoration: underline; }
+
+    /* Slide 5 & 6 Metrics */
+    .metric-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+
+    .metric-box {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-val { font-size: 24px; font-weight: 800; color: var(--navy-900); letter-spacing: -0.02em; }
+    .metric-val.blue { color: var(--blue-600); }
+    .metric-val.emerald { color: var(--emerald-600); }
+    .metric-label { font-size: 12.5px; font-weight: 600; color: var(--slate-600); }
+    .metric-sub { font-size: 12px; color: var(--slate-500); line-height: 1.38; }
+
+    .judge-pair { display: grid; grid-template-columns: 1fr; gap: 14px; }
+
+    .judge-card {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-left: 4px solid var(--blue-600);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .judge-card.client { border-left-color: var(--emerald-600); }
+
+    .judge-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .judge-title { font-size: 15px; font-weight: 700; color: var(--slate-900); }
+    .judge-desc { font-size: 13.5px; color: var(--slate-700); line-height: 1.45; }
+
+    /* Slide 6 Consolidated Single-Turn Table */
+    .bench-box {
+      background: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bench-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12.8px;
+      font-weight: 700;
+      color: var(--navy-900);
+    }
+    table.mini-bench {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.2px;
+      background: var(--white);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--slate-200);
+    }
+    table.mini-bench th {
+      background: var(--navy-900);
+      color: var(--white);
+      padding: 7px 8px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.03em;
+    }
+    table.mini-bench td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--slate-200);
+      color: var(--slate-700);
+      font-family: var(--font-mono);
+      font-size: 11.8px;
+    }
+    table.mini-bench td:first-child { font-family: var(--font-sans); font-weight: 700; color: var(--slate-900); }
+    table.mini-bench tr:last-child td { border-bottom: none; }
+    table.mini-bench tr.winner-row { background: #ECFDF5; }
+    table.mini-bench tr.winner-row td { color: #065F46; font-weight: 700; }
+
+    .win-pill {
+      display: inline-block;
+      background: #059669;
+      color: #FFFFFF;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 999px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    /* Navigation Bar */
+    .nav-bar {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.86);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      padding: 7px 14px;
+      border-radius: 999px;
+      z-index: 120;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+    }
+
+    .nav-btn {
+      border: none;
+      background: transparent;
+      color: #E2E8F0;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .nav-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); color: var(--white); }
+    .nav-btn:disabled { opacity: 0.35; cursor: default; }
+    .nav-btn.notes-active { background: var(--blue-600); color: var(--white); }
+    .nav-counter { font-family: var(--font-mono); font-size: 12.5px; color: #94A3B8; padding: 0 8px; user-select: none; }
+    .nav-sep { width: 1px; height: 16px; background: rgba(148, 163, 184, 0.28); }
+
+    /* Presenter Notes Drawer */
+    .notes-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 420px;
+      max-width: 92vw;
+      height: 100vh;
+      background: #0F172A;
+      color: #E2E8F0;
+      border-left: 1px solid rgba(148, 163, 184, 0.22);
+      box-shadow: -12px 0 36px rgba(0, 0, 0, 0.35);
+      z-index: 250;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    .notes-drawer.open { transform: translateX(0); }
+
+    .notes-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .notes-head h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--cyan-400);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .notes-close {
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: #CBD5E1;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .notes-body {
+      padding: 18px 20px 32px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    .notes-section {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .notes-section h4 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #93C5FD;
+      margin-bottom: 8px;
+    }
+    .notes-section ul { padding-left: 16px; display: flex; flex-direction: column; gap: 6px; color: #CBD5E1; }
+    .notes-section p { color: #CBD5E1; }
+
+    @media (max-width: 980px) {
+      .slide { padding: 32px 24px 80px; }
+      .grid-3, .grid-2, .grid-asymmetric { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      html, body { overflow: visible; height: auto; background: white; }
+      .progress-track, .nav-bar, .notes-drawer, .ref-modal-backdrop, .play-toggle { display: none !important; }
+      .deck { height: auto; overflow: visible; }
+      .slide {
+        position: relative;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        page-break-after: always;
+        height: 100vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <main class="deck" id="deck">
+
+    <!-- SLIDE 1: CAPA CORPORATIVA -->
+    <section class="slide dark active" data-slide="1">
+      <div class="grid-bg"></div>
+      <div class="slide-inner">
+        <div class="cover-wrap">
+          <div class="brand-mark">
+            <div class="brand-logo">NT</div>
+            <div class="brand-name">NexusTech Solutions</div>
+          </div>
+
+          <h1 class="cover-title">
+            NexusTech <span>Support Copilot</span>
+          </h1>
+          <p class="cover-subtitle">
+            Orquestração, Memória e API Backend
+          </p>
+
+          <div class="cover-divider"></div>
+
+          <div class="cover-meta">
+            <div><strong>Arquitetura:</strong> Multi-Agente Human-in-the-Loop (HITL)</div>
+            <div><strong>Persistência:</strong> PostgreSQL + pgvector</div>
+            <div><strong>Escopo:</strong> Pipeline Multi-Turno, API, WebSockets &amp; Interface</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: EVOLUÇÃO DA ARQUITETURA -->
+    <section class="slide" data-slide="2">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Decisões Arquiteturais</div>
+            <h2 class="slide-title">Evolução da Pipeline &amp; Papéis dos Agentes</h2>
+            <p class="slide-subtitle">Ajustes estruturais guiados pelo fluxo real de atendimento e pelos testes em multi-turno.</p>
+          </div>
+          <span class="badge badge-blue">Copiloto HITL</span>
+        </div>
+
+        <div class="grid-3">
+          <div class="card card-accent-top">
+            <div class="card-icon-row">
+              <div class="card-icon">01</div>
+              <span class="badge badge-blue">Operação N1</span>
+            </div>
+            <h3 class="card-title">Foco em Human-in-the-Loop</h3>
+            <ul class="bullet-list">
+              <li>A pipeline gera <strong>sugestões de resposta</strong> acompanhadas do alerta do Auditor.</li>
+              <li>O atendente humano revisa e decide: <strong>enviar, editar ou descartar</strong>.</li>
+              <li>Nenhuma mensagem chega ao cliente sem confirmação humana.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-cyan">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#E0F2FE;color:#0369A1;">02</div>
+              <span class="badge badge-slate">Delta dos Agentes</span>
+            </div>
+            <h3 class="card-title">Classificador &amp; Resumidor</h3>
+            <ul class="bullet-list cyan">
+              <li><strong>Redator e Auditor</strong> mantêm suas responsabilidades originais.</li>
+              <li><strong>Classificador:</strong> deixa de decidir escalonamento; foca em roteamento de tópico (<code>CONTINUAR</code> vs <code>NOVO_TOPICO</code>) e categoria para BI.</li>
+              <li><strong>Resumidor (novo):</strong> compacta conversas longas em background e gera o dossiê de handoff N2/N3 sob demanda.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-amber">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#FEF3C7;color:#B45309;">03</div>
+              <span class="badge badge-amber">Recuperação RAG</span>
+            </div>
+            <h3 class="card-title">Busca Aberta sem Filtro Rígido</h3>
+            <ul class="bullet-list amber">
+              <li>Removido o <code>category_filter</code> da consulta vetorial (busca direta nos <strong>30 manuais</strong>).</li>
+              <li>Ganho de latência do filtro era mínimo frente ao <strong>efeito cascata</strong> de erros de classificação levando a <code>FORA_DE_ESCOPO</code>.</li>
+              <li>Classificação preservada para BI — e filtro segue válido em bases muito maiores com alta confiabilidade.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="note-strip">
+          <strong>Resumo da decisão:</strong> desacoplar a recuperação vetorial da classificação eliminou falsos negativos sem custo relevante de tempo, enquanto o HITL garante governança total antes do envio ao cliente.
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: FLUXO ANIMADO PADRONIZADO POR CATEGORIA -->
+    <section class="slide" data-slide="3">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Ciclo Multi-Turno</div>
+            <h2 class="slide-title">Caminho da Mensagem na Orquestração</h2>
+            <p class="slide-subtitle">Cores padronizadas por papel no sistema: Humanos, Agentes, Ferramenta RAG e Memória PostgreSQL.</p>
+          </div>
+          <span class="badge badge-emerald">Fluxo End-to-End</span>
+        </div>
+
+        <div class="flow-shell">
+          <div class="flow-controls">
+            <div class="step-tabs" id="flowTabs">
+              <button class="step-btn active" data-step="0">1. Turno 1 (Paralelo)</button>
+              <button class="step-btn" data-step="1">2. Turno 2 (Cache Hit)</button>
+              <button class="step-btn" data-step="2">3. Novo Tópico</button>
+              <button class="step-btn" data-step="3">4. Handoff &amp; Encerramento</button>
+            </div>
+            <button class="play-toggle" id="flowPlayBtn" title="Pausar ou retomar animação">
+              <span id="flowPlayIcon">⏸</span> <span id="flowPlayText">Auto-loop ativo</span>
+            </button>
+          </div>
+
+          <!-- Category Legend -->
+          <div class="flow-legend">
+            <span class="legend-item"><span class="legend-swatch sw-human"></span>Humanos (Cliente / N1)</span>
+            <span class="legend-item"><span class="legend-swatch sw-agent"></span>Agentes LLM</span>
+            <span class="legend-item"><span class="legend-swatch sw-tool"></span>Ferramenta (RAG pgvector)</span>
+            <span class="legend-item"><span class="legend-swatch sw-mem"></span>Memória (PostgreSQL)</span>
+            <span class="legend-item"><span class="legend-swatch sw-cond"></span>Acionamento Condicional (histórico &gt; limite)</span>
+          </div>
+
+          <div class="flow-svg-box">
+            <svg class="flow-svg" viewBox="0 0 1120 340" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrowGray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#94A3B8" />
+                </marker>
+                <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563EB" />
+                </marker>
+                <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#059669" />
+                </marker>
+                <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#D97706" />
+                </marker>
+                <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1 L 10 5 L 0 9 z" fill="#7C3AED" />
+                </marker>
+              </defs>
+
+              <!-- Edges -->
+              <path id="e-client-cls" class="svg-edge" d="M 168 142 C 215 142, 215 80, 262 80" marker-end="url(#arrowGray)" />
+              <path id="e-client-rag" class="svg-edge" d="M 168 162 C 215 162, 215 224, 262 224" marker-end="url(#arrowGray)" />
+              <path id="e-cls-red" class="svg-edge" d="M 432 80 C 478 80, 478 136, 520 136" marker-end="url(#arrowGray)" />
+              <path id="e-rag-red" class="svg-edge" d="M 432 224 C 478 224, 478 166, 520 166" marker-end="url(#arrowGray)" />
+              <path id="e-mem-red" class="svg-edge" d="M 605 270 L 605 196" marker-end="url(#arrowGray)" />
+              <path id="e-red-aud" class="svg-edge" d="M 692 151 L 748 151" marker-end="url(#arrowGray)" />
+              <path id="e-aud-hitl" class="svg-edge" d="M 910 151 L 952 151" marker-end="url(#arrowGray)" />
+              <path id="e-hitl-mem" class="svg-edge" d="M 1025 194 C 1025 298, 830 298, 696 298" marker-end="url(#arrowGray)" />
+              <path id="e-hitl-n2" class="svg-edge" d="M 1025 106 C 1025 48, 955 48, 912 48" marker-end="url(#arrowGray)" />
+              <path id="e-cls-mem" class="svg-edge" d="M 347 118 C 347 298, 475 298, 518 298" marker-end="url(#arrowGray)" />
+              <!-- Conditional background summarization edge on topic switch -->
+              <path id="e-cls-n2" class="svg-edge" d="M 432 56 C 560 12, 650 18, 728 40" marker-end="url(#arrowGray)" />
+
+              <!-- Nodes with semantic category classes -->
+              <g id="n-client" class="svg-node cat-human" transform="translate(24, 114)">
+                <rect width="144" height="76" rx="12" />
+                <text x="72" y="21" text-anchor="middle" class="n-tag">Humano</text>
+                <text x="72" y="42" text-anchor="middle" class="n-title">Cliente</text>
+                <text x="72" y="60" text-anchor="middle" class="n-sub">Mensagem no chat</text>
+              </g>
+
+              <g id="n-cls" class="svg-node cat-agent" transform="translate(264, 40)">
+                <rect width="168" height="78" rx="12" />
+                <text x="84" y="20" text-anchor="middle" class="n-tag">Agente</text>
+                <text x="84" y="41" text-anchor="middle" class="n-title">Classificador</text>
+                <text x="84" y="59" text-anchor="middle" class="n-sub">Tópico &amp; Categoria BI</text>
+              </g>
+
+              <g id="n-rag" class="svg-node cat-tool" transform="translate(264, 186)">
+                <rect width="168" height="78" rx="12" />
+                <text x="84" y="20" text-anchor="middle" class="n-tag">Ferramenta</text>
+                <text x="84" y="41" text-anchor="middle" class="n-title">RAG (pgvector)</text>
+                <text x="84" y="59" text-anchor="middle" class="n-sub">30 manuais sem filtro</text>
+              </g>
+
+              <g id="n-red" class="svg-node cat-agent" transform="translate(522, 114)">
+                <rect width="168" height="78" rx="12" />
+                <text x="84" y="20" text-anchor="middle" class="n-tag">Agente</text>
+                <text x="84" y="41" text-anchor="middle" class="n-title">Redator N1</text>
+                <text x="84" y="59" text-anchor="middle" class="n-sub">Sugestão ancorada</text>
+              </g>
+
+              <g id="n-aud" class="svg-node cat-agent" transform="translate(750, 114)">
+                <rect width="158" height="78" rx="12" />
+                <text x="79" y="20" text-anchor="middle" class="n-tag">Agente</text>
+                <text x="79" y="41" text-anchor="middle" class="n-title">Auditor QA</text>
+                <text x="79" y="59" text-anchor="middle" class="n-sub">Fidelidade &amp; Alerta N2</text>
+              </g>
+
+              <g id="n-hitl" class="svg-node cat-human" transform="translate(954, 108)">
+                <rect width="142" height="86" rx="12" />
+                <text x="71" y="20" text-anchor="middle" class="n-tag">Humano</text>
+                <text x="71" y="40" text-anchor="middle" class="n-title">Atendente N1</text>
+                <text x="71" y="57" text-anchor="middle" class="n-sub">Enviar / Editar /</text>
+                <text x="71" y="72" text-anchor="middle" class="n-sub">Escalar (HITL)</text>
+              </g>
+
+              <g id="n-mem" class="svg-node cat-memory" transform="translate(520, 270)">
+                <rect width="174" height="58" rx="10" />
+                <text x="87" y="16" text-anchor="middle" class="n-tag">Memória</text>
+                <text x="87" y="34" text-anchor="middle" class="n-title">PostgreSQL Memória</text>
+                <text x="87" y="49" text-anchor="middle" class="n-sub">Cache · Tópicos · Histórico</text>
+              </g>
+
+              <g id="n-n2" class="svg-node cat-agent" transform="translate(730, 16)">
+                <rect width="180" height="66" rx="10" />
+                <text x="90" y="17" text-anchor="middle" class="n-tag">Agente</text>
+                <text x="90" y="36" text-anchor="middle" class="n-title">Resumidor → N2</text>
+                <text x="90" y="53" text-anchor="middle" class="n-sub" id="n2Sub">Compactação / Handoff</text>
+              </g>
+            </svg>
+          </div>
+
+          <div class="flow-caption">
+            <div class="flow-caption-text" id="flowCaption">
+              <strong>Turno 1 (Paralelo):</strong> Classificador e busca RAG rodam em paralelo nos 30 manuais; Redator e Auditor validam a sugestão e aguardam a confirmação do atendente N1.
+            </div>
+            <div class="flow-metric-pill" id="flowPill">Paralelo T1 · Confirmação HITL</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: ARQUITETURA DE MEMÓRIA -->
+    <section class="slide" data-slide="4">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Persistência &amp; Gestão de Estado</div>
+            <h2 class="slide-title">Arquitetura de Memória no PostgreSQL</h2>
+            <p class="slide-subtitle">Unificação do armazenamento relacional e vetorial (<code>pgvector</code>) em quatro camadas complementares.</p>
+          </div>
+          <span class="badge badge-blue">4 Tabelas · 1 Cluster</span>
+        </div>
+
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 23%;">Tabela</th>
+                <th style="width: 21%;">Papel na Memória</th>
+                <th style="width: 34%;">O que armazena</th>
+                <th style="width: 22%;">Ciclo de vida</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>langchain_pg_embedding</code></td>
+                <td>
+                  <span class="role-tag tag-semantic">Memória Semântica</span><br />
+                  <small style="color:#64748B;">Base de conhecimento</small>
+                </td>
+                <td>Embeddings e trechos dos 30 manuais técnicos oficiais.</td>
+                <td><strong>Permanente</strong><br />Leitura vetorial via <code>pgvector</code></td>
+              </tr>
+              <tr>
+                <td><code>chat_sessions</code></td>
+                <td>
+                  <span class="role-tag tag-working">Memória de Trabalho</span><br />
+                  <small style="color:#64748B;">Contexto quente</small>
+                </td>
+                <td><code>categoria_atual</code>, <code>chunks_em_cache</code>, <code>topic_contexts</code>, <code>pending_suggestion</code> e <code>handoff_summary</code>.</td>
+                <td><strong>Mutável durante o chat</strong><br />Higienizado/apagado ao encerrar</td>
+              </tr>
+              <tr>
+                <td><code>chat_messages</code></td>
+                <td>
+                  <span class="role-tag tag-episodic">Memória Episódica</span><br />
+                  <small style="color:#64748B;">Histórico oficial</small>
+                </td>
+                <td>Apenas mensagens efetivamente confirmadas (<code>CLIENT</code>, <code>HUMAN_N1</code>, <code>SYSTEM</code>).</td>
+                <td><strong>Persistente</strong><br />Log imutável (<em>append-only</em>)</td>
+              </tr>
+              <tr>
+                <td><code>copilot_traceability</code></td>
+                <td>
+                  <span class="role-tag tag-audit">Auditoria &amp; HITL</span><br />
+                  <small style="color:#64748B;">Feedback e métricas</small>
+                </td>
+                <td>Rascunho original da IA, texto final humano, <code>was_edited</code>, <code>edit_ratio</code> e telemetria.</td>
+                <td><strong>Persistente</strong><br />Métricas e melhoria contínua</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="refs-bar">
+          <div class="refs-label">
+            <span>Base conceitual (clique para detalhes):</span>
+          </div>
+          <div class="refs-chips">
+            <button class="ref-chip" data-ref="coala">CoALA (Sumers et al., 2023) ↗</button>
+            <button class="ref-chip" data-ref="memgpt">MemGPT / Letta (Packer et al., 2023) ↗</button>
+            <button class="ref-chip" data-ref="anthropic">Anthropic — Context Engineering ↗</button>
+            <button class="ref-chip" data-ref="hitl">Stateful Checkpointing &amp; HITL ↗</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: ESTRATÉGIA DE TESTES & JUIZ DUPLO -->
+    <section class="slide" data-slide="5">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Qualidade &amp; Validação</div>
+            <h2 class="slide-title">Estratégia de Testes &amp; Juiz Duplo em Paralelo</h2>
+            <p class="slide-subtitle">Avaliação automatizada persistida no PostgreSQL separando comportamento conversacional e precisão isolada.</p>
+          </div>
+          <span class="badge badge-emerald">1.360 Execuções Concluídas</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card card-accent-top">
+            <div class="card-icon-row">
+              <h3 class="card-title">Baterias de Benchmark</h3>
+              <span class="badge badge-slate">Checkpoint SQL</span>
+            </div>
+
+            <div class="metric-row">
+              <div class="metric-box">
+                <div class="metric-val blue">6 × 3</div>
+                <div class="metric-label">Multi-Turno (LLM Cliente)</div>
+                <div class="metric-sub">6 cenários × 3 repetições (18 conversas/preset) — valida memória, follow-up, troca de tópico e timing de escalonamento.</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-val emerald">68 × 5</div>
+                <div class="metric-label">Single-Turn Bilíngue</div>
+                <div class="metric-sub">30 EN + 30 PT + 8 bordas N2 × 5 runs <strong>(4 presets · 1.360 testes concluídos)</strong> — isola cada agente sem ruído entre turnos.</div>
+              </div>
+            </div>
+
+            <ul class="bullet-list" style="margin-top: 4px;">
+              <li><strong>Testes de integração (<code>pytest</code>):</strong> garantem persistência, troca de tópico e isolamento no PostgreSQL.</li>
+              <li><strong>Retomada automática:</strong> cada execução salva em <code>eval_results</code> e <code>eval_multiturn_results</code> com tolerância a queda de rede.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-emerald">
+            <div class="card-icon-row">
+              <h3 class="card-title">Juiz Duplo em Paralelo (<code>AvaliadorDuplo</code>)</h3>
+              <span class="badge badge-emerald">2 Visões</span>
+            </div>
+
+            <div class="judge-pair">
+              <div class="judge-card">
+                <div class="judge-head">
+                  <span class="judge-title">Juiz Técnico (QA / Auditoria)</span>
+                  <code>nemotron-3-ultra-550b</code>
+                </div>
+                <p class="judge-desc">
+                  Recebe manual base, fonte extraída, gabarito e handoff. Avalia <strong>fidelidade ao manual, ausência de alucinação, citação de fonte, coerência/timing de escalonamento e qualidade do handoff</strong>.
+                </p>
+              </div>
+
+              <div class="judge-card client">
+                <div class="judge-head">
+                  <span class="judge-title">Juiz Cliente (UX / CSAT)</span>
+                  <code>nemotron-3.5-super-vl-120b</code>
+                </div>
+                <p class="judge-desc">
+                  Enxerga apenas a conversa final — sem manual nem metadados internos. Avalia <strong>empatia, clareza, sensação de ser ouvido, utilidade prática e ausência de jargões internos</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: RESULTADOS PRELIMINARES & HITL -->
+    <section class="slide" data-slide="6">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Diagnóstico Empírico</div>
+            <h2 class="slide-title">Achados Preliminares: Latência, HITL &amp; Melhoria</h2>
+            <p class="slide-subtitle">Indicadores intermediários usados para calibrar modelos e arquitetura — não são métricas finais de produção.</p>
+          </div>
+          <span class="badge badge-amber">Diagnóstico · Em Melhoria Contínua</span>
+        </div>
+
+        <div class="grid-asymmetric">
+          <div class="card card-accent-top" style="gap: 12px;">
+            <div class="card-icon-row">
+              <h3 class="card-title">Evidências Coletadas (Probe · Multi-Turno · Single-Turn)</h3>
+              <span class="badge badge-blue">NVIDIA NIM</span>
+            </div>
+
+            <ul class="bullet-list">
+              <li>
+                <strong>Thinking OFF vs. ON:</strong> desligar o raciocínio cortou a latência em até <strong>10×</strong> no probe e eliminou estouros de token (<code>EmptyLLMResponseError</code>) observados no multi-turno.
+              </li>
+              <li>
+                <strong>RAG sem <code>category_filter</code> validada:</strong> <strong>0,0%</strong> de falso fora de escopo em PT e <strong>50,0%</strong> exatos nos 8 <code>EDGE</code> (barrando os 4 fora de escopo reais).
+              </li>
+            </ul>
+
+            <!-- Resultados Single-Turn 68x5 Consolidados -->
+            <div class="bench-box">
+              <div class="bench-head">
+                <span>Bateria Single-Turn Consolidada (68 casos × 5 runs · 340/preset)</span>
+                <span class="badge badge-emerald" style="padding:2px 8px;font-size:11px;">100% Aprov. Auditor</span>
+              </div>
+              <table class="mini-bench">
+                <thead>
+                  <tr>
+                    <th>Preset (Thinking OFF)</th>
+                    <th>Cat (BI)</th>
+                    <th>Esc (Acur.)</th>
+                    <th>Tec (std)</th>
+                    <th>Cli</th>
+                    <th>P50</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>copilot_fast</td>
+                    <td>82,6%</td>
+                    <td>92,9%</td>
+                    <td>9,08 (±1,74)</td>
+                    <td>9,35</td>
+                    <td>15,97s</td>
+                  </tr>
+                  <tr>
+                    <td>copilot_preciso</td>
+                    <td>89,4%</td>
+                    <td>93,5%</td>
+                    <td>9,19 (±1,52)</td>
+                    <td>9,32</td>
+                    <td>12,20s</td>
+                  </tr>
+                  <tr class="winner-row">
+                    <td>copilot_redator_super <span class="win-pill">Melhor</span></td>
+                    <td>89,4%</td>
+                    <td>92,4%</td>
+                    <td>9,73 (±0,66)</td>
+                    <td>9,16</td>
+                    <td>14,26s</td>
+                  </tr>
+                  <tr>
+                    <td>autonomo_fast</td>
+                    <td>89,1%</td>
+                    <td>91,5%</td>
+                    <td>9,71 (±0,74)</td>
+                    <td>9,15</td>
+                    <td>16,53s</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="font-size:11.5px;color:#475569;line-height:1.38;">
+                <strong>Isolamento por agente:</strong> <code>super-vl-120b</code> no Redator trouxe o maior salto (<strong>9,19 → 9,73</strong>; <code>EDGE</code> <strong>9,70/10</strong>; alucinação <strong>0%</strong>). Subir o Auditor para <code>ultra-550b</code> não trouxe ganho e quase dobrou o tempo da etapa.
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-accent-emerald" style="justify-content: space-between;">
+            <div style="display:flex;flex-direction:column;gap:13px;">
+              <div class="card-icon-row">
+                <h3 class="card-title">Por que priorizar latência agora?</h3>
+                <span class="badge badge-emerald">Estratégia HITL</span>
+              </div>
+
+              <ul class="bullet-list emerald">
+                <li><strong>Humano no circuito:</strong> como o atendente N1 revisa e edita a mensagem final, responder rápido (~12–14s) tem mais valor operacional do que pagar 60s+ de raciocínio pesado.</li>
+                <li><strong>Métricas para iterar:</strong> o Juiz Duplo flagrou casos de <code>Cliente 10/10</code> com <code>Técnico 0/10</code> (alucinações educadas) e apontou ajustes diretos (queries EN e seção de phishing).</li>
+                <li><strong>Ponte para autonomia:</strong> edições reais em <code>copilot_traceability</code> (<code>was_edited</code>, <code>edit_ratio</code>) formam a base de melhoria até o sistema operar de forma <strong>100% autônoma</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="note-strip" style="background:#ECFDF5;border-color:#A7F3D0;border-left-color:#059669;color:#065F46;">
+              <strong>Princípio guia:</strong> velocidade com supervisão humana hoje → dados auditáveis → autonomia confiável amanhã.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: BACK-END — ARQUITETURA & API -->
+    <section class="slide" data-slide="7">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Back-end (Parte 1/2) · Fundação da API</div>
+            <h2 class="slide-title">Arquitetura FastAPI, WebSockets &amp; Persistência</h2>
+            <p class="slide-subtitle">Contrato de integração multi-tenant conectando a pipeline de IA, o PostgreSQL e os canais em tempo real.</p>
+          </div>
+          <span class="badge badge-blue">FastAPI + SQLAlchemy</span>
+        </div>
+
+        <div class="grid-3">
+          <div class="card card-accent-top">
+            <div class="card-icon-row">
+              <div class="card-icon">API</div>
+              <span class="badge badge-blue">Multi-Tenant</span>
+            </div>
+            <h3 class="card-title">Rotas REST &amp; Execução Assíncrona</h3>
+            <ul class="bullet-list">
+              <li>Endpoints completos: <code>/health</code>, <code>/ready</code>, <code>/sessions</code>, <code>/messages</code>, <code>/confirm</code>, <code>/close</code>, <code>/client-close</code> e módulo <code>/specialist</code>.</li>
+              <li>Isolamento rigoroso por tenant via header <code>X-Tenant-ID</code> e tratamento padronizado de erros HTTP.</li>
+              <li><strong><code>202 Accepted</code>:</strong> disparo da pipeline N1 em <code>BackgroundTasks</code> para resposta imediata sem travar a requisição.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-cyan">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#E0F2FE;color:#0369A1;">WS</div>
+              <span class="badge badge-slate">Privacidade</span>
+            </div>
+            <h3 class="card-title">Canais WebSocket &amp; Isolamento</h3>
+            <ul class="bullet-list cyan">
+              <li><code>ws_manager</code> gerencia <strong>3 canais isolados</strong> por tenant e perfil: <code>/ws/client/{id}</code>, <code>/ws/agent</code> e <code>/ws/specialist</code>.</li>
+              <li>Eventos ao vivo: <code>client.message_received</code>, <code>copilot.processing</code>, <code>copilot.suggestion_ready</code>, <code>session.escalated</code> e <code>session.closed</code>.</li>
+              <li><strong>Regra de Ouro:</strong> <code>view=client</code> nunca recebe sugestões pendentes, chunks do manual ou <code>handoff_summary</code>.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-emerald">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#D1FAE5;color:#065F46;">DB</div>
+              <span class="badge badge-emerald">SessionRepository</span>
+            </div>
+            <h3 class="card-title">Estado Multi-Turno no PostgreSQL</h3>
+            <ul class="bullet-list emerald">
+              <li>Controle transacional de <code>turno_global</code>, <code>turnos_no_topico_atual</code> e cache de chunks por tópico em <code>topic_contexts</code>.</li>
+              <li>Mensagens do fluxo N1 só entram em <code>chat_messages</code> após confirmação HITL em <code>confirmar_turno</code>.</li>
+              <li>Telemetria e edições registradas em <code>copilot_traceability</code>; limpeza automática do estado quente ao encerrar.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="note-strip">
+          <strong>Base desacoplada:</strong> a API expõe a pipeline de agentes com isolamento por tenant, privacidade garantida para o cliente e persistência transacional no PostgreSQL.
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: BACK-END — POSSE N1->N2, TEMPO REAL & VALIDAÇÃO -->
+    <section class="slide" data-slide="8">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Back-end (Parte 2/2) · Consolidação &amp; Regras de Posse</div>
+            <h2 class="slide-title">Posse N1 → N2, Tempo Real &amp; Validação E2E</h2>
+            <p class="slide-subtitle">Governança completa do handoff ao vivo, enriquecimento do dossiê e validação no PostgreSQL real.</p>
+          </div>
+          <span class="badge badge-emerald">Operacional E2E</span>
+        </div>
+
+        <div class="grid-3">
+          <div class="card card-accent-top">
+            <div class="card-icon-row">
+              <div class="card-icon">N2</div>
+              <span class="badge badge-blue">Posse &amp; Bloqueio</span>
+            </div>
+            <h3 class="card-title">Fluxo de Posse N1 → N2/N3</h3>
+            <ul class="bullet-list">
+              <li><strong>Bloqueio do N1:</strong> após escalar (<code>ESCALADA_N2</code>), <code>/confirm</code> e <code>/close</code> retornam <code>403 Forbidden</code> para o N1.</li>
+              <li><strong>Chat direto com N2:</strong> novas mensagens do cliente são salvas via <code>registrar_mensagem_direta</code> e enviadas direto ao especialista (sem acionar o Copiloto N1); N2 responde em <code>POST /specialist/sessions/{id}/messages</code>.</li>
+              <li><strong>Encerramento ao vivo:</strong> só N2 (<code>/resolve</code>) ou Cliente (<code>/client-close</code>) encerram, disparando <code>session.closed</code> via WS e bloqueando novas mensagens (<code>409</code>).</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-cyan">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#E0F2FE;color:#0369A1;">RT</div>
+              <span class="badge badge-slate">Metadados &amp; WS</span>
+            </div>
+            <h3 class="card-title">Dossiê Completo &amp; Digitação</h3>
+            <ul class="bullet-list cyan">
+              <li>Colunas <code>customer_name</code> e <code>customer_external_id</code> em <code>chat_sessions</code> com geração sequencial automática por tenant (<code>cli-001</code>, <code>cli-002</code>...).</li>
+              <li><code>auditor_escalation_reason</code> preenchido direto de <code>copilot_traceability</code> (com fallback para escaladas manuais).</li>
+              <li>Digitação em tempo real nos 3 perfis: <code>client.typing</code>, <code>agent.typing</code> e <code>specialist.typing</code>.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-emerald">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#D1FAE5;color:#065F46;">QA</div>
+              <span class="badge badge-emerald">Validado E2E</span>
+            </div>
+            <h3 class="card-title">Testes &amp; Validação no PostgreSQL</h3>
+            <ul class="bullet-list emerald">
+              <li><strong>10/10 testes unitários</strong> passando no <code>pytest</code> cobrindo HITL, multi-turno, isolamento multi-tenant, WebSockets e dossiê.</li>
+              <li><strong>Swagger + Docker PostgreSQL:</strong> cache hit (<code>0 ms</code> pgvector) e resumo sob demanda <code>handoff_summary</code> conferidos direto no banco.</li>
+              <li>Fluxo completo validado ponta a ponta: abertura → N1 → escalada → chat direto Cliente ↔ N2 → resolução.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="note-strip" style="background:#ECFDF5;border-color:#A7F3D0;border-left-color:#059669;color:#065F46;">
+          <strong>Status do Back-end:</strong> regras de posse N1 → N2, notificações de encerramento e persistência validadas no PostgreSQL real.
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: FRONT-END — GOOGLE STITCH + REACT/VITE/TAILWIND -->
+    <section class="slide" data-slide="9">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Interface &amp; Experiência do Usuário</div>
+            <h2 class="slide-title">Front-end: Google Stitch + React, Vite &amp; Tailwind</h2>
+            <p class="slide-subtitle">Design System prototipado no Google Stitch convertido em aplicação React (<code>frontend-app/</code>) integrada ao FastAPI e aos 3 WebSockets.</p>
+          </div>
+          <span class="badge badge-blue">React + Stitch · 3 Perfis</span>
+        </div>
+
+        <div class="grid-3">
+          <div class="card card-accent-top">
+            <div class="card-icon-row">
+              <div class="card-icon">01</div>
+              <span class="badge badge-blue">Visão Cliente</span>
+            </div>
+            <h3 class="card-title">Chat Limpo &amp; Controle</h3>
+            <ul class="bullet-list">
+              <li>Abertura pedindo <strong>apenas o nome</strong> — ID externo atribuído dinamicamente no back-end.</li>
+              <li>Indicadores <em>"Atendente N1 está digitando..."</em> e <em>"Especialista N2 está digitando..."</em> em tempo real.</li>
+              <li>Botão <strong>Encerrar Chat</strong> (<code>/client-close</code>) e bloqueio automático do input ao receber <code>session.closed</code>.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-cyan">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#E0F2FE;color:#0369A1;">02</div>
+              <span class="badge badge-slate">Visão Atendente N1</span>
+            </div>
+            <h3 class="card-title">Workspace 3 Colunas (HITL)</h3>
+            <ul class="bullet-list cyan">
+              <li><strong>Inbox lateral</strong> com filtros (<code>Open / Escalated / Closed</code>) e busca + thread central com pergunta pendente e composer editável.</li>
+              <li><strong>Painel AI Copilot / Details:</strong> raciocínio do auditor, categoria, chunk RAG, indicador <em>Cache Hit</em> e alerta de escalonamento.</li>
+              <li><strong>Send Reply</strong> detecta <code>ACEITA_SEM_EDICAO</code> vs <code>EDITADA</code>; após escalar, trava em <strong>modo somente leitura</strong>.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-amber">
+            <div class="card-icon-row">
+              <div class="card-icon" style="background:#FEF3C7;color:#B45309;">03</div>
+              <span class="badge badge-amber">Especialista N2/N3</span>
+            </div>
+            <h3 class="card-title">Fila, Chat Direto &amp; Dossiê</h3>
+            <ul class="bullet-list amber">
+              <li><strong>Escalated Queue</strong> atualizada ao vivo via <code>/ws/specialist</code> com contagem de turnos e categoria.</li>
+              <li><strong>Chat direto ao vivo:</strong> histórico completo (Cliente + N1 + N2) e composer ativo para responder diretamente ao cliente.</li>
+              <li><strong>Escalation Dossier:</strong> <code>handoff_summary</code>, <code>auditor_escalation_reason</code>, chunk RAG e botão <strong>Resolve Ticket</strong>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="note-strip" style="background:#ECFDF5;border-color:#A7F3D0;border-left-color:#059669;color:#065F46;">
+          <strong>Demonstração lado a lado:</strong> 3 abas em <code>http://localhost:5173</code> (<code>?role=client</code>, <code>?role=agent</code> e <code>?role=specialist</code>) mostrando todo o ciclo HITL, posse N2 e encerramento ao vivo.
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: PRÓXIMAS MELHORIAS (ROADMAP) -->
+    <section class="slide" data-slide="10">
+      <div class="slide-inner">
+        <div class="slide-header">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>Evolução Contínua</div>
+            <h2 class="slide-title">Próximos Passos: IA, Back-end &amp; Front-end</h2>
+            <p class="slide-subtitle">Refinamentos identificados no uso real ponta a ponta para melhorar naturalidade, precisão e UX.</p>
+          </div>
+          <span class="badge badge-amber">Roadmap</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card card-accent-top">
+            <div class="card-icon-row">
+              <h3 class="card-title">Melhorias de Contexto, IA &amp; Back-end</h3>
+              <span class="badge badge-blue">Pipeline &amp; API</span>
+            </div>
+            <ul class="bullet-list">
+              <li><strong>Contexto para mensagens simples / sem correspondência:</strong> evitar que saudações isoladas (ex.: <em>"oi"</em>, <em>"olá"</em>) ou mensagens curtas que a IA não reconheça disparem escalonamento automático indevido para N2.</li>
+              <li><strong>Remover saudações repetitivas da IA:</strong> ajustar o prompt do Redator para não sugerir cumprimentos (<em>"Bom dia! Tudo bem?"</em>) em toda nova mensagem de uma conversa já em andamento.</li>
+              <li><strong>Mensagem + aviso juntos no escalonamento:</strong> ao escalar para N2, permitir enviar a resposta/contexto do atendente N1 junto com o aviso de transferência ao cliente.</li>
+            </ul>
+          </div>
+
+          <div class="card card-accent-emerald">
+            <div class="card-icon-row">
+              <h3 class="card-title">Melhorias no Front-end &amp; Entrega</h3>
+              <span class="badge badge-emerald">UX &amp; Qualidade</span>
+            </div>
+            <ul class="bullet-list emerald">
+              <li><strong>Renderização de Markdown nas bolhas:</strong> formatar negrito (<code>**...**</code>), listas numeradas e trechos de código nas respostas geradas pela IA.</li>
+              <li><strong>Resiliência de WebSocket &amp; feedback visual:</strong> reconexão automática em quedas de rede e alertas visuais de novas mensagens na fila de atendimento.</li>
+              <li><strong>Testes &amp; organização de PRs:</strong> expandir o <code>pytest</code> para as novas rotas de posse N2 (<code>/client-close</code>, <code>/specialist/.../messages</code> e bloqueio <code>403</code>) e separar commits de back-end e <code>frontend-app/</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Navigation Bar -->
+  <nav class="nav-bar" aria-label="Navegação de slides">
+    <button class="nav-btn" id="prevBtn" title="Slide anterior (←)">← Anterior</button>
+    <span class="nav-counter" id="slideCounter">1 / 10</span>
+    <button class="nav-btn" id="nextBtn" title="Próximo slide (→)">Próximo →</button>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" id="notesBtn" title="Abrir anotações e Q&A (tecla N)">Notas &amp; Q&amp;A (N)</button>
+    <button class="nav-btn" id="fsBtn" title="Tela cheia (tecla F)">Tela Cheia</button>
+  </nav>
+
+  <!-- Reference Popover Modal -->
+  <div class="ref-modal-backdrop" id="refBackdrop" role="dialog" aria-modal="true">
+    <div class="ref-modal">
+      <div class="ref-modal-head">
+        <div class="ref-modal-title" id="refTitle">Referência</div>
+        <button class="ref-modal-close" id="refClose" aria-label="Fechar">×</button>
+      </div>
+      <div class="ref-modal-body" id="refBody"></div>
+      <div class="ref-modal-apply" id="refApply"></div>
+      <a class="ref-modal-link" id="refLink" href="#" target="_blank" rel="noopener noreferrer">Abrir material original ↗</a>
+    </div>
+  </div>
+
+  <!-- Presenter Notes Drawer -->
+  <aside class="notes-drawer" id="notesDrawer" aria-label="Anotações do Apresentador">
+    <div class="notes-head">
+      <h3 id="notesSlideLabel">Notas — Slide 1</h3>
+      <button class="notes-close" id="notesClose" aria-label="Fechar notas">×</button>
+    </div>
+    <div class="notes-body" id="notesBody"></div>
+  </aside>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const progressFill = document.getElementById('progressFill');
+    const slideCounter = document.getElementById('slideCounter');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const notesBtn = document.getElementById('notesBtn');
+    const notesDrawer = document.getElementById('notesDrawer');
+    const notesClose = document.getElementById('notesClose');
+    const notesSlideLabel = document.getElementById('notesSlideLabel');
+    const notesBody = document.getElementById('notesBody');
+    const fsBtn = document.getElementById('fsBtn');
+
+    let currentIndex = 0;
+
+    const SPEAKER_NOTES = [
+      {
+        title: "Slide 1 — Capa (30s)",
+        fala: [
+          "Apresentar o foco geral: decisões de arquitetura da pipeline multi-agente, desenho da memória para multi-turno, estratégia de avaliação e integração completa no Back-end + Front-end.",
+          "Avisar que os pontos estão resumidos para caber no tempo e que ao final abrimos para demonstração e perguntas."
+        ],
+        qa: "Divisão do time: frente de IA/Memória/Benchmark integrada diretamente com a frente de API FastAPI, WebSockets e Interface."
+      },
+      {
+        title: "Slide 2 — Evolução & Agentes (2 min)",
+        fala: [
+          "Destacar o foco em HITL: o Copiloto sugere, mas o humano sempre tem o controle final de editar ou descartar antes de enviar.",
+          "Explicar apenas o que mudou nos agentes (Redator e Auditor mantidos): Classificador focado em tópico/BI e entrada do Resumidor.",
+          "Justificar a remoção do category_filter: com 30 manuais, o filtro quase não ganhava tempo e uma acurácia de ~80–89% na classificação gerava efeito cascata de FORA_DE_ESCOPO na RAG."
+        ],
+        qa: "No benchmark de 1.360 execuções sem filtro, o falso fora de escopo em PT foi 0,0% e os 8 casos EDGE ficaram em exatos 50,0% (barrando os 4 fora de escopo reais pelo MIN_SIMILARITY)."
+      },
+      {
+        title: "Slide 3 — Fluxo Animado (1 min 30s)",
+        fala: [
+          "Apontar rapidamente a legenda de cores: Verde = Humanos, Azul = Agentes, Âmbar = Ferramenta RAG, Roxo = Memória PostgreSQL.",
+          "Percorrer os 4 momentos: Turno 1 paralelo (Classificador + RAG), Turno 2 reutilizando cache, Turno 3 (Novo Tópico) onde o Resumidor pulsa em tracejado mostrando que só entra em background se o histórico do tópico anterior ultrapassar o limite de contexto, e Handoff sob demanda no encerramento."
+        ],
+        qa: "O Resumidor roda em ThreadPoolExecutor assíncrono na troca de tópico longa (> 2400 chars), evitando adicionar latência no tempo de resposta do atendente."
+      },
+      {
+        title: "Slide 4 — Memória no PostgreSQL (2 min)",
+        fala: [
+          "Apresentar as 4 tabelas no mesmo cluster PostgreSQL + pgvector: base semântica (manuais), memória de trabalho/contexto quente (apagada ao encerrar), histórico oficial episódico e rastreabilidade HITL.",
+          "Resumir as inspirações: CoALA, MemGPT, Anthropic Context Engineering e persistência de estado HITL."
+        ],
+        qa: "BANCO DE Q&A:\n• CONTINUAR_TOPICO: reutiliza chunks_em_cache (0 ms de pgvector).\n• NOVO_TOPICO: salva resumo/contexto em topic_contexts e limpa a janela ativa do Redator/Auditor.\n• Resumidor Assíncrono (AgenteResumo): compacta tópicos longos (> 2400 chars) em background e gera dossiê sob demanda no escalonamento."
+      },
+      {
+        title: "Slide 5 — Estratégia de Testes & Juiz Duplo (2 min)",
+        fala: [
+          "Explicar POR QUE dividimos em dois tipos de teste: Multi-Turno (6 cenários × 3 runs) observa a dinâmica real (memória, follow-up, troca de tópico e timing); Single-Turn bilíngue (68 casos × 5 runs = 1.360 testes concluídos) isola cada agente em escala estatística sem contaminação entre turnos.",
+          "Explicar como cada teste afeta o projeto: Multi-Turno guia memória e UX conversacional; Single-Turn define a escolha de modelo por papel e calibragem de bordas.",
+          "Destacar o Juiz Duplo em paralelo: separa fidelidade técnica ao manual (QA) da experiência percebida pelo cliente (UX/CSAT)."
+        ],
+        qa: "Os testes rodam com checkpoint no PostgreSQL e retry automático contra queda de rede."
+      },
+      {
+        title: "Slide 6 — Achados Preliminares & HITL (2 min)",
+        fala: [
+          "Reforçar que esses números são diagnósticos para guiar melhorias, não métricas finais do produto.",
+          "Esclarecer que 'Esc (Acur.)' (~92–93,5%) é a assertividade de decidir escalar vs. resolver no N1 — não a porcentagem de tickets escalados.",
+          "Destacar o vencedor copilot_redator_super (9,73/10 técnico, menor desvio ±0,66, 0% alucinação e P50 de 14,26s) e a tese HITL → Autonomia via copilot_traceability."
+        ],
+        qa: "Próximos refinamentos apontados pelos dados: normalizar queries em inglês para zerar os 6,7% (2/30) de fora de escopo em CAN-EN, adicionar seção de Phishing no manual de Fraud (EDGE-04) e rodar um mini-benchmark dedicado ao AgenteResumo."
+      },
+      {
+        title: "Slide 7 — Back-end: Arquitetura & API (2 min)",
+        fala: [
+          "Explicar a fundação construída em FastAPI + SQLAlchemy: endpoints REST para sessão, mensagens, confirmação HITL, encerramento (N1, cliente e especialista) e fila/dossiê N2, com isolamento multi-tenant via X-Tenant-ID.",
+          "Destacar o fluxo assíncrono: POST /messages responde 202 Accepted imediatamente e dispara a pipeline em BackgroundTasks, enviando o progresso via WebSocket.",
+          "Enfatizar a privacidade no ws_manager e no view=client, além do controle transacional de estado no SessionRepository."
+        ],
+        qa: "Se perguntarem sobre privacidade: a rota view=client e o canal /ws/client/{id} filtram rigorosamente qualquer rascunho pendente, chunk ou resumo de handoff."
+      },
+      {
+        title: "Slide 8 — Back-end: Posse N1→N2, Tempo Real & Validação (2 min)",
+        fala: [
+          "Destacar a regra de posse implementada no back-end: quando o N1 escala para ESCALADA_N2, ele perde o controle (/confirm e /close retornam 403 Forbidden).",
+          "Explicar o chat ao vivo com o Especialista: novas mensagens do cliente são salvas via registrar_mensagem_direta sem acionar o Copiloto N1, e o N2 responde direto em /specialist/sessions/{id}/messages.",
+          "Mostrar o fechamento do dossiê (customer_name, customer_external_id automático cli-001/cli-002 e auditor_escalation_reason de copilot_traceability), digitação nos 3 perfis e encerramento notificado via session.closed + 10/10 testes pytest."
+        ],
+        qa: "Sessões encerradas retornam 409 Conflict caso chegue alguma requisição tardia, e o fallback do auditor_escalation_reason garante análise mesmo em escaladas manuais."
+      },
+      {
+        title: "Slide 9 — Front-end: Google Stitch + React/Vite/Tailwind (2 min)",
+        fala: [
+          "Apresentar a evolução da interface: prototipamos o Design System e o layout de 3 colunas no Google Stitch e portamos para React + Vite + Tailwind CSS em frontend-app/.",
+          "Percorrer as 3 abas: Cliente (entrada só com nome, digitando N1/N2 e Encerrar Chat), Atendente N1 (Inbox com filtros, pergunta pendente, painel AI Copilot/Details, botão Send Reply inteligente e trava somente leitura após escalar) e Especialista N2/N3 (fila ao vivo, chat direto com o cliente, dossiê completo e Resolve Ticket)."
+        ],
+        qa: "As 3 visões podem ser abertas simultaneamente em http://localhost:5173/?role=client, ?role=agent e ?role=specialist."
+      },
+      {
+        title: "Slide 10 — Próximos Passos (1 min)",
+        fala: [
+          "Focar nos refinamentos reais que surgiram testando o fluxo ao vivo: melhorar o tratamento de contexto para mensagens simples como 'oi' não dispararem escalonamento, remover saudações repetitivas da IA em todos os turnos e permitir enviar mensagem + aviso juntos ao escalar para N2.",
+          "No Front-end e entrega: renderizar Markdown nas bolhas da IA, reconexão automática de WebSocket, expandir testes pytest para as rotas de posse N2 e organizar os PRs."
+        ],
+        qa: "Encerrar abrindo para demonstração ao vivo nas 3 abas (http://localhost:5173) e perguntas."
+      }
+    ];
+
+    function renderNotes(idx) {
+      const data = SPEAKER_NOTES[idx];
+      notesSlideLabel.textContent = data.title;
+      const bullets = data.fala.map(item => `<li>${item}</li>`).join('');
+      const qaHtml = data.qa.replace(/\n/g, '<br>');
+      notesBody.innerHTML = `
+        <div class="notes-section">
+          <h4>Roteiro de Fala</h4>
+          <ul>${bullets}</ul>
+        </div>
+        <div class="notes-section">
+          <h4>Reserva para Perguntas (Q&amp;A)</h4>
+          <p>${qaHtml}</p>
+        </div>
+      `;
+    }
+
+    function goToSlide(index) {
+      if (index < 0 || index >= slides.length) return;
+      slides.forEach((s, i) => {
+        s.classList.remove('active', 'prev');
+        if (i === index) s.classList.add('active');
+        else if (i < index) s.classList.add('prev');
+      });
+      currentIndex = index;
+      const pct = ((index + 1) / slides.length) * 100;
+      progressFill.style.width = pct + '%';
+      slideCounter.textContent = `${index + 1} / ${slides.length}`;
+      prevBtn.disabled = index === 0;
+      nextBtn.disabled = index === slides.length - 1;
+      renderNotes(index);
+    }
+
+    prevBtn.addEventListener('click', () => goToSlide(currentIndex - 1));
+    nextBtn.addEventListener('click', () => goToSlide(currentIndex + 1));
+
+    function toggleNotes() {
+      notesDrawer.classList.toggle('open');
+      notesBtn.classList.toggle('notes-active', notesDrawer.classList.contains('open'));
+    }
+    notesBtn.addEventListener('click', toggleNotes);
+    notesClose.addEventListener('click', toggleNotes);
+
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (refBackdrop.classList.contains('open')) {
+        if (e.key === 'Escape') closeRefModal();
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        goToSlide(currentIndex + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        goToSlide(currentIndex - 1);
+      } else if (e.key.toLowerCase() === 'n') {
+        toggleNotes();
+      } else if (e.key.toLowerCase() === 'f') {
+        fsBtn.click();
+      }
+    });
+
+    // Slide 3: category-colored nodes + conditional pulsing Summarizer
+    const FLOW_STEPS = [
+      {
+        nodes: { 'n-client': 'lit', 'n-cls': 'lit', 'n-rag': 'lit', 'n-red': 'lit', 'n-aud': 'lit', 'n-hitl': 'lit', 'n-mem': 'lit' },
+        edges: {
+          'e-client-cls': 'active-green',
+          'e-client-rag': 'active-amber',
+          'e-cls-red': 'active-blue',
+          'e-rag-red': 'active-amber',
+          'e-red-aud': 'active-blue',
+          'e-aud-hitl': 'active-blue',
+          'e-hitl-mem': 'active-purple'
+        },
+        n2Sub: 'Compactação / Handoff',
+        caption: '<strong>Turno 1 (Paralelo):</strong> Classificador e busca RAG (sem filtro) rodam em paralelo; Redator e Auditor validam a sugestão e o humano confirma antes de persistir no histórico oficial.',
+        pill: 'Paralelo T1 · Confirmação HITL'
+      },
+      {
+        nodes: { 'n-client': 'lit', 'n-cls': 'lit', 'n-mem': 'lit', 'n-red': 'lit', 'n-aud': 'lit', 'n-hitl': 'lit' },
+        edges: {
+          'e-client-cls': 'active-green',
+          'e-cls-red': 'active-blue',
+          'e-mem-red': 'active-purple',
+          'e-red-aud': 'active-blue',
+          'e-aud-hitl': 'active-blue',
+          'e-hitl-mem': 'active-purple'
+        },
+        n2Sub: 'Compactação / Handoff',
+        caption: '<strong>Turno 2 (CONTINUAR_TOPICO):</strong> O Classificador detecta continuidade e reaproveita o manual salvo em <code>chunks_em_cache</code> na memória PostgreSQL (0 ms de consulta vetorial).',
+        pill: 'Cache Hit · 0 ms pgvector'
+      },
+      {
+        nodes: { 'n-client': 'lit', 'n-cls': 'lit', 'n-mem': 'lit', 'n-rag': 'lit', 'n-red': 'lit', 'n-aud': 'lit', 'n-hitl': 'lit', 'n-n2': 'lit-conditional' },
+        edges: {
+          'e-client-cls': 'active-green',
+          'e-cls-mem': 'active-purple',
+          'e-cls-n2': 'active-cond',
+          'e-client-rag': 'active-amber',
+          'e-rag-red': 'active-amber',
+          'e-red-aud': 'active-blue',
+          'e-aud-hitl': 'active-blue',
+          'e-hitl-mem': 'active-purple'
+        },
+        n2Sub: 'Condicional (> 2400 chars)',
+        caption: '<strong>Turno 3 (NOVO_TOPICO):</strong> O assunto anterior vai para <code>topic_contexts</code> e a RAG busca o novo manual. O <strong>Resumidor (pulsando)</strong> pode ou não rodar em background conforme o tamanho do histórico.',
+        pill: 'Novo Tópico · Resumo Condicional'
+      },
+      {
+        nodes: { 'n-aud': 'lit', 'n-hitl': 'lit', 'n-n2': 'lit', 'n-mem': 'lit' },
+        edges: {
+          'e-aud-hitl': 'active-blue',
+          'e-hitl-n2': 'active-blue',
+          'e-hitl-mem': 'active-purple'
+        },
+        n2Sub: 'Dossiê Handoff N2/N3',
+        caption: '<strong>Escalonamento &amp; Encerramento:</strong> Quando o humano escala, o <code>Resumidor</code> gera o dossiê executivo sob demanda para o N2; ao encerrar, o estado quente da sessão é higienizado na memória.',
+        pill: 'Handoff Sob Demanda · Limpeza'
+      }
+    ];
+
+    const allNodeIds = ['n-client', 'n-cls', 'n-rag', 'n-red', 'n-aud', 'n-hitl', 'n-mem', 'n-n2'];
+    const allEdgeIds = ['e-client-cls', 'e-client-rag', 'e-cls-red', 'e-rag-red', 'e-mem-red', 'e-red-aud', 'e-aud-hitl', 'e-hitl-mem', 'e-hitl-n2', 'e-cls-mem', 'e-cls-n2'];
+    const flowTabs = Array.from(document.querySelectorAll('#flowTabs .step-btn'));
+    const flowCaption = document.getElementById('flowCaption');
+    const flowPill = document.getElementById('flowPill');
+    const flowPlayBtn = document.getElementById('flowPlayBtn');
+    const flowPlayIcon = document.getElementById('flowPlayIcon');
+    const flowPlayText = document.getElementById('flowPlayText');
+    const n2Sub = document.getElementById('n2Sub');
+
+    let flowStep = 0;
+    let flowPlaying = true;
+    let flowTimer = null;
+
+    const EDGE_MARKER_MAP = {
+      'active-blue': 'url(#arrowBlue)',
+      'active-green': 'url(#arrowGreen)',
+      'active-amber': 'url(#arrowAmber)',
+      'active-purple': 'url(#arrowPurple)',
+      'active-cond': 'url(#arrowBlue)'
+    };
+
+    function applyFlowStep(idx) {
+      flowStep = idx;
+      const cfg = FLOW_STEPS[idx];
+
+      flowTabs.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+      n2Sub.textContent = cfg.n2Sub;
+
+      allNodeIds.forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('lit', 'lit-conditional', 'dim');
+        if (cfg.nodes[id]) el.classList.add(cfg.nodes[id]);
+        else el.classList.add('dim');
+      });
+
+      allEdgeIds.forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('active-blue', 'active-green', 'active-amber', 'active-purple', 'active-cond');
+        el.setAttribute('marker-end', 'url(#arrowGray)');
+        if (cfg.edges[id]) {
+          el.classList.add(cfg.edges[id]);
+          el.setAttribute('marker-end', EDGE_MARKER_MAP[cfg.edges[id]]);
+        }
+      });
+
+      flowCaption.innerHTML = cfg.caption;
+      flowPill.textContent = cfg.pill;
+    }
+
+    function startFlowLoop() {
+      clearInterval(flowTimer);
+      flowTimer = setInterval(() => {
+        if (flowPlaying && currentIndex === 2) {
+          applyFlowStep((flowStep + 1) % FLOW_STEPS.length);
+        }
+      }, 4500);
+    }
+
+    flowTabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        applyFlowStep(Number(btn.dataset.step));
+        startFlowLoop();
+      });
+    });
+
+    flowPlayBtn.addEventListener('click', () => {
+      flowPlaying = !flowPlaying;
+      flowPlayIcon.textContent = flowPlaying ? '⏸' : '▶';
+      flowPlayText.textContent = flowPlaying ? 'Auto-loop ativo' : 'Animação pausada';
+    });
+
+    // Slide 4 clickable references
+    const REFERENCES = {
+      coala: {
+        title: "CoALA — Cognitive Architectures for Language Agents (Sumers et al., 2023)",
+        body: "Propõe uma taxonomia clara de memória para agentes de linguagem inspirada na ciência cognitiva: Memória de Trabalho (contexto imediato da tarefa), Memória Episódica (experiências e interações passadas) e Memória Semântica (conhecimento factual externo).",
+        apply: "Aplicação no NexusTech: mapeamos diretamente Memória Semântica em langchain_pg_embedding (pgvector), Memória de Trabalho em chat_sessions e Memória Episódica em chat_messages.",
+        url: "https://arxiv.org/abs/2309.02427"
+      },
+      memgpt: {
+        title: "MemGPT / Letta — Towards LLMs as Operating Systems (Packer et al., 2023)",
+        body: "Inspira-se na hierarquia de memória de sistemas operacionais (RAM vs. Disco): mantém apenas o contexto 'quente' essencial na janela limitada do LLM e gerencia leitura, arquivamento e compactação contra armazenamento externo persistente.",
+        apply: "Aplicação no NexusTech: chat_sessions mantém apenas o estado quente e topic_contexts compactados; o histórico completo reside no PostgreSQL e o estado temporário é limpo ao encerrar a sessão.",
+        url: "https://arxiv.org/abs/2310.08560"
+      },
+      anthropic: {
+        title: "Anthropic — Building Effective Agents & Effective Context Engineering",
+        body: "Destaca o padrão Evaluator-Optimizer (gerador + avaliador em loop) e alerta contra o 'context rot' — perda de precisão quando a janela de contexto acumula histórico irrelevante — recomendando compactação e recuperação sob demanda.",
+        apply: "Aplicação no NexusTech: loop Redator ↔ Auditor, isolamento da janela em NOVO_TOPICO e compactação assíncrona via AgenteResumo em background.",
+        url: "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents"
+      },
+      hitl: {
+        title: "Persistência de Estado & Checkpointing Human-in-the-Loop (HITL)",
+        body: "Em sistemas críticos de atendimento, o estado da conversa é persistido entre turnos de forma transacional, separando rascunhos pendentes da IA do histórico oficial validado pelo operador humano.",
+        apply: "Aplicação no NexusTech: pending_suggestion aguarda confirmação; apenas após ação humana em confirmar_envio_db o texto vira verdade em chat_messages e a edição é auditada em copilot_traceability.",
+        url: "https://langchain-ai.github.io/langgraph/concepts/persistence/"
+      }
+    };
+
+    const refBackdrop = document.getElementById('refBackdrop');
+    const refTitle = document.getElementById('refTitle');
+    const refBody = document.getElementById('refBody');
+    const refApply = document.getElementById('refApply');
+    const refLink = document.getElementById('refLink');
+    const refClose = document.getElementById('refClose');
+
+    function openRefModal(key) {
+      const ref = REFERENCES[key];
+      if (!ref) return;
+      refTitle.textContent = ref.title;
+      refBody.textContent = ref.body;
+      refApply.textContent = ref.apply;
+      refLink.href = ref.url;
+      refBackdrop.classList.add('open');
+    }
+
+    function closeRefModal() { refBackdrop.classList.remove('open'); }
+
+    document.querySelectorAll('.ref-chip').forEach(chip => {
+      chip.addEventListener('click', () => openRefModal(chip.dataset.ref));
+    });
+    refClose.addEventListener('click', closeRefModal);
+    refBackdrop.addEventListener('click', (e) => { if (e.target === refBackdrop) closeRefModal(); });
+
+    goToSlide(0);
+    applyFlowStep(0);
+    startFlowLoop();
+  </script>
+</body>
+</html>
