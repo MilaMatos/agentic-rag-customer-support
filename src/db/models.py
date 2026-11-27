@@ -17,6 +17,8 @@ class ChatSessionDB(Base):
 
     session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(String(64), default="default", index=True)
+    customer_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    customer_external_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     status: Mapped[str] = mapped_column(String(24), default="ABERTA", index=True)
     turno_global: Mapped[int] = mapped_column(Integer, default=0)
     turnos_no_topico_atual: Mapped[int] = mapped_column(Integer, default=0)
