@@ -1,34 +1,18 @@
-import os
-from dotenv import load_dotenv
-from crewai import Agent, Task, Crew, Process, LLM
+from typing import Any, Optional
+from crewai import Agent, Task, Crew, Process
 
-from src.agents.prompts.classifier import construir_prompt_classificador
+from src.agents.llm_factory import LLMConfig, criar_llms_agente
 from src.agents.parsers import extrair_json_classificacao
+from src.agents.prompts.classifier import construir_prompt_classificador
+from src.agents.retry import executar_crew_com_retry
 from src.agents.schemas import TicketClassification
-
-load_dotenv()
-
-API_KEY = os.getenv("NVIDIA_API_KEY")
-BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
 
 
 class AgenteClassificador:
-    """Agente autônomo responsável pela triagem e classificação inicial do ticket."""
+    """Responsável pela triagem, roteamento de tópico e categoria"""
 
-    def __init__(self, model_name: str = "nvidia/nemotron-3.5-lightning-30b-a3b"):
-        if not API_KEY:
-            raise ValueError("NVIDIA_API_KEY não encontrada no .env")
-
-        self.llm = LLM(
-            model=model_name,
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.0,
-            max_tokens=512,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
+    def __init__(self, model_name: Optional[str | LLMConfig | dict[str, Any]] = None):
+        self.llm, self.fallback_llm = criar_llms_agente("classifier", model_name, temperature=0.0)
 
     def executar(
         self,
@@ -61,13 +45,8 @@ class AgenteClassificador:
             agent=agente,
         )
 
-        crew = Crew(
-            agents=[agente],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=False,
-        )
-        crew.kickoff()
+        crew = Crew(agents=[agente], tasks=[task], process=Process.sequential, verbose=False)
+        executar_crew_com_retry(crew, fallback_llm=self.fallback_llm)
 
         dados_dict = extrair_json_classificacao(task.output.raw)
         return TicketClassification(**dados_dict)

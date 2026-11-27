@@ -1,33 +1,17 @@
-import os
-from dotenv import load_dotenv
-from crewai import Agent, Task, Crew, Process, LLM
+from typing import Any, Optional
+from crewai import Agent, Task, Crew, Process
 
-from src.agents.prompts.summarizer import construir_prompt_resumo
+from src.agents.llm_factory import LLMConfig, criar_llms_agente
 from src.agents.parsers import limpar_texto_resumo
-
-load_dotenv()
-
-API_KEY = os.getenv("NVIDIA_API_KEY")
-BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+from src.agents.prompts.summarizer import construir_prompt_resumo
+from src.agents.retry import executar_crew_com_retry
 
 
 class AgenteResumo:
-    """Agente autônomo responsável por gerar o resumo executivo interno do atendimento"""
+    """Gera dossiê de handoff para especialistas e compacta tópicos extensos em background"""
 
-    def __init__(self, model_name: str = "nvidia/nemotron-3.5-lightning-30b-a3b"):
-        if not API_KEY:
-            raise ValueError("NVIDIA_API_KEY não encontrada no .env")
-
-        self.llm = LLM(
-            model=model_name,
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.0,
-            max_tokens=512,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
+    def __init__(self, model_name: Optional[str | LLMConfig | dict[str, Any]] = None):
+        self.llm, self.fallback_llm = criar_llms_agente("summarizer", model_name, temperature=0.0)
 
     def executar(self, resposta_final_cliente: str) -> str:
         prompts = construir_prompt_resumo(resposta_final_cliente)
@@ -47,16 +31,10 @@ class AgenteResumo:
             agent=agente,
         )
 
-        crew = Crew(
-            agents=[agente],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=False,
-        )
-        crew.kickoff()
+        crew = Crew(agents=[agente], tasks=[task], process=Process.sequential, verbose=False)
+        executar_crew_com_retry(crew, fallback_llm=self.fallback_llm)
 
         return limpar_texto_resumo(task.output.raw)
-
 
     def resumir_topico(
         self,
@@ -80,11 +58,13 @@ class AgenteResumo:
             verbose=False,
             allow_delegation=False,
         )
+
         task = Task(
             description=prompt,
             expected_output="Resumo factual curto (2 a 4 frases) em português.",
             agent=agente,
         )
+
         crew = Crew(agents=[agente], tasks=[task], process=Process.sequential, verbose=False)
-        crew.kickoff()
+        executar_crew_com_retry(crew, fallback_llm=self.fallback_llm)
         return limpar_texto_resumo(task.output.raw)

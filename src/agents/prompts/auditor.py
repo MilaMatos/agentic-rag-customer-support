@@ -45,7 +45,7 @@ def construir_prompt_auditor(
     """Monta o system e user prompt do Auditor com diretrizes N1 e regras de escalonamento."""
     if not chunks_fatiados:
         regras_str = (
-            "[CASO FORA_DE_ESCOPO]: Nenhum manual encontrado no banco vetorial (< 0.30). "
+            "[FORA_DE_ESCOPO]: Nenhum manual encontrado no banco vetorial (< 0.30). "
             "REGRA: O Redator DEVE recusar responder procedimentos inventados, informar que "
             "está transferindo para um especialista sem citar N1/N2/N3/Backoffice. "
             "Se o Redator fez isso, marque aprovado_para_envio=true, redator_alucinou=false e requer_escalonamento=true."

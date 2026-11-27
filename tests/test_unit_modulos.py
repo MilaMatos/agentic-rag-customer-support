@@ -1,11 +1,16 @@
-import pytest
-from src.rag.retriever import NexusRetriever
-from src.agents.prompts.redactor import construir_prompt_redator
+from src.agents.llm_factory import DEFAULT_AGENT_MODELS, resolver_config
+from src.agents.parsers import (
+    extrair_json_auditoria,
+    extrair_json_classificacao,
+    separar_mensagem_e_fonte,
+)
 from src.agents.prompts.auditor import construir_prompt_auditor
-from src.agents.parsers import separar_mensagem_e_fonte, extrair_json_auditoria
+from src.agents.prompts.redactor import construir_prompt_redator
+from src.rag.retriever import NexusRetriever
+
 
 class TestUnitarioParsersEPrompts:
-    """Testes unitários rápidos (sem chamada de LLM ou banco) para validar contratos."""
+    """Testes unitários rápidos (sem LLM nem banco) para validar contratos."""
 
     def test_fatiamento_chunk_completo(self):
         texto_manual = (
@@ -34,13 +39,10 @@ class TestUnitarioParsersEPrompts:
         assert resultado["mensagem_cliente"] == "Olá! Acesse o painel para resolver."
 
     def test_separar_mensagem_sem_fonte_retorna_nao_citada(self):
-        resposta_llm = "Olá! Esqueci de colocar a tag no final."
-        resultado = separar_mensagem_e_fonte(resposta_llm)
-
+        resultado = separar_mensagem_e_fonte("Olá! Esqueci de colocar a tag no final.")
         assert resultado["fonte_citada"] == "NÃO_CITADA"
 
     def test_prompt_redator_fora_de_escopo(self):
-        # Quando o Retriever não acha nada (score < 0.30), envia lista vazia []
         prompts = construir_prompt_redator(
             pergunta_cliente="Me dê uma receita de bolo de chocolate.",
             chunks_fatiados=[],
@@ -66,4 +68,20 @@ class TestUnitarioParsersEPrompts:
         )
         dados = extrair_json_auditoria(saida_suja)
         assert dados["aprovado_para_envio"] is True
-        assert dados["nivel_escalonamento"] == "N1"
+        assert dados["requer_escalonamento"] is False
+
+    def test_extrair_json_classificacao_fallback_seguro(self):
+        saida_suja = (
+            '```json\n{"category": "Technical", "priority": "Alta", '
+            '"is_followup": true, "search_query": "dashboard travado"}\n```'
+        )
+        dados = extrair_json_classificacao(saida_suja)
+        assert dados["category"] == "Technical"
+        assert dados["is_followup"] is True
+        assert dados["search_query"] == "dashboard travado"
+
+    def test_defaults_modelos_e_thinking_desligado(self):
+        for role in ("classifier", "redactor", "auditor", "summarizer"):
+            cfg = resolver_config(DEFAULT_AGENT_MODELS[role]["primary"])
+            assert cfg.enable_thinking is False
+            assert cfg.timeout > 0

@@ -1,38 +1,20 @@
 import logging
-import os
 from typing import Any, Optional
-from dotenv import load_dotenv
-from crewai import Agent, Task, Crew, Process, LLM
+from crewai import Agent, Task, Crew, Process
 
-from src.agents.prompts.redactor import construir_prompt_redator
+from src.agents.llm_factory import LLMConfig, criar_llms_agente
 from src.agents.parsers import separar_mensagem_e_fonte
-from src.agents.tools import buscar_manual_rag_tool
+from src.agents.prompts.redactor import construir_prompt_redator
+from src.agents.retry import executar_crew_com_retry
 
-load_dotenv()
 logging.getLogger("crewai.llms.base_llm").setLevel(logging.ERROR)
-
-API_KEY = os.getenv("NVIDIA_API_KEY")
-BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
 
 
 class AgenteRedatorN1:
-    """Agente autônomo responsável pela redação humanizada N1."""
+    """Responsável pela redação humanizada ancorada nos manuais"""
 
-    def __init__(self, model_name: str = "nvidia/nemotron-3.5-lightning-30b-a3b"):
-        if not API_KEY:
-            raise ValueError("NVIDIA_API_KEY não encontrada no .env")
-
-        self.llm = LLM(
-            model=model_name,
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.1,
-            max_tokens=1024,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
-        self.tools = [buscar_manual_rag_tool]
+    def __init__(self, model_name: Optional[str | LLMConfig | dict[str, Any]] = None):
+        self.llm, self.fallback_llm = criar_llms_agente("redactor", model_name, temperature=0.1)
 
     def executar(
         self,
@@ -52,14 +34,11 @@ class AgenteRedatorN1:
             forcar_escalonamento_limite=forcar_escalonamento_limite,
         )
 
-        ferramentas_ativas = self.tools if chunks is None else []
-
         agente = Agent(
             role="Especialista de Atendimento (Redator)",
             goal="Produzir resposta clara e fiel à base de conhecimento para o cliente.",
             backstory=prompts["system_prompt"],
             llm=self.llm,
-            tools=ferramentas_ativas,
             verbose=False,
             allow_delegation=False,
         )
@@ -70,12 +49,7 @@ class AgenteRedatorN1:
             agent=agente,
         )
 
-        crew = Crew(
-            agents=[agente],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=False,
-        )
-        crew.kickoff()
+        crew = Crew(agents=[agente], tasks=[task], process=Process.sequential, verbose=False)
+        executar_crew_com_retry(crew, fallback_llm=self.fallback_llm)
 
         return separar_mensagem_e_fonte(task.output.raw)

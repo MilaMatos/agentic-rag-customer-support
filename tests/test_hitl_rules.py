@@ -1,8 +1,6 @@
-from contextvars import copy_context
 from types import SimpleNamespace
 
 from src.agents.schemas import ConfirmacaoHumanaSchema
-from src.agents.tools import _ultimos_chunks_ctx, obter_ultimos_chunks_tool
 from src.pipeline_agents import NexusSupportPipeline
 
 
@@ -53,10 +51,14 @@ def test_confirmar_envio_n1_nao_chama_resumidor():
     sugestao = SimpleNamespace(
         mensagem_sugerida="Resposta padrão N1.",
         pergunta_cliente="Como reseto a senha?",
+        caixa_rastreabilidade=SimpleNamespace(
+            triagem_inicial=SimpleNamespace(category="Account")
+        ),
     )
     pipeline.session_repo = _FakeRepo(sugestao)
     resumidor = _FakeResumidor()
     pipeline.resumidor = resumidor
+    pipeline._agendar_compactacao_se_necessario = lambda *args, **kwargs: None
 
     confirmacao = ConfirmacaoHumanaSchema(
         suggestion_id="SUG-1",
@@ -106,23 +108,3 @@ def test_confirmar_envio_escalada_n2_chama_resumidor_sob_demanda():
     assert res.handoff_summary is not None
     assert resumidor.chamadas == 1
     assert "Continua falhando" in resumidor.ultimo_texto
-
-
-def test_contextvar_isola_chunks_entre_contextos():
-    def _worker_a():
-        _ultimos_chunks_ctx.set([{"chunk_id": "CHUNK-A"}])
-        return obter_ultimos_chunks_tool()
-
-    def _worker_b():
-        _ultimos_chunks_ctx.set([{"chunk_id": "CHUNK-B"}])
-        return obter_ultimos_chunks_tool()
-
-    res_a = copy_context().run(_worker_a)
-    res_b = copy_context().run(_worker_b)
-    res_root = obter_ultimos_chunks_tool()
-
-    print(f"\n[ContextVar] worker_a={res_a}, worker_b={res_b}, root={res_root}")
-
-    assert res_a == [{"chunk_id": "CHUNK-A"}]
-    assert res_b == [{"chunk_id": "CHUNK-B"}]
-    assert res_root == []
