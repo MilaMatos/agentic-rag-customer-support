@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -82,3 +82,86 @@ class CopilotTraceabilityDB(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_agora_utc)
     confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class EvalResultDB(Base):
+    __tablename__ = "eval_results"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    experiment_id: Mapped[str] = mapped_column(String(80), index=True)
+    models_config: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    case_id: Mapped[str] = mapped_column(String(64), index=True)
+    run_index: Mapped[int] = mapped_column(Integer)
+    mode: Mapped[str] = mapped_column(String(24), default="single_turn")
+
+    pergunta: Mapped[str] = mapped_column(Text)
+    expected_category: Mapped[str] = mapped_column(String(32))
+    predicted_category: Mapped[str] = mapped_column(String(32))
+    category_match: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    expected_escalation: Mapped[bool] = mapped_column(Boolean, default=False)
+    predicted_escalation: Mapped[bool] = mapped_column(Boolean, default=False)
+    escalation_match: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    chunk_id: Mapped[str] = mapped_column(String(64))
+    fonte_citada: Mapped[str] = mapped_column(String(64))
+    aprovado_auditor: Mapped[bool] = mapped_column(Boolean, default=True)
+    redator_alucinou: Mapped[bool] = mapped_column(Boolean, default=False)
+    tentativas_redacao: Mapped[int] = mapped_column(Integer, default=1)
+    total_pipeline_s: Mapped[float] = mapped_column(Float, default=0.0)
+    telemetria_tempos: Mapped[dict[str, float]] = mapped_column(JSONB)
+
+    judge_model: Mapped[str] = mapped_column(String(80))
+    judge_score_total: Mapped[int] = mapped_column(Integer, default=0)
+    judge_criteria: Mapped[dict[str, int]] = mapped_column(JSONB)
+    judge_reasoning: Mapped[str] = mapped_column(Text, default="")
+
+    client_judge_model: Mapped[str] = mapped_column(String(80), default="")
+    client_score_total: Mapped[int] = mapped_column(Integer, default=0)
+    client_criteria: Mapped[dict[str, int]] = mapped_column(JSONB, default=dict)
+    client_reasoning: Mapped[str] = mapped_column(Text, default="")
+
+    caixa_completa: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_agora_utc)
+
+    __table_args__ = (
+        UniqueConstraint("experiment_id", "case_id", "run_index", name="uq_eval_exp_case_run"),
+    )
+
+class EvalMultiTurnResultDB(Base):
+    __tablename__ = "eval_multiturn_results"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    experiment_id: Mapped[str] = mapped_column(String(80), index=True)
+    models_config: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    scenario_id: Mapped[str] = mapped_column(String(64), index=True)
+    categoria_principal: Mapped[str] = mapped_column(String(32))
+    run_index: Mapped[int] = mapped_column(Integer)
+    session_id: Mapped[str] = mapped_column(String(80))
+
+    total_turnos: Mapped[int] = mapped_column(Integer)
+    expected_escalation: Mapped[bool] = mapped_column(Boolean, default=False)
+    final_escalated: Mapped[bool] = mapped_column(Boolean, default=False)
+    escalation_match: Mapped[bool] = mapped_column(Boolean, default=False)
+    cache_hits: Mapped[int] = mapped_column(Integer, default=0)
+    latencia_media_turno_s: Mapped[float] = mapped_column(Float, default=0.0)
+    latencia_total_s: Mapped[float] = mapped_column(Float, default=0.0)
+
+    judge_model: Mapped[str] = mapped_column(String(80))
+    judge_score_total: Mapped[int] = mapped_column(Integer, default=0)
+    judge_criteria: Mapped[dict[str, int]] = mapped_column(JSONB)
+    judge_reasoning: Mapped[str] = mapped_column(Text, default="")
+
+    client_judge_model: Mapped[str] = mapped_column(String(80), default="")
+    client_score_total: Mapped[int] = mapped_column(Integer, default=0)
+    client_criteria: Mapped[dict[str, int]] = mapped_column(JSONB, default=dict)
+    client_reasoning: Mapped[str] = mapped_column(Text, default="")
+
+    transcricao: Mapped[str] = mapped_column(Text)
+    handoff_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    turnos_detalhe: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_agora_utc)
+
+    __table_args__ = (
+        UniqueConstraint("experiment_id", "scenario_id", "run_index", name="uq_eval_mt_exp_scen_run"),
+    )

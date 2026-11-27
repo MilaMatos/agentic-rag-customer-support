@@ -1,0 +1,750 @@
+[
+  {
+    "id_teste": "CAN-EN-01",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Account",
+    "subcategoria": "Falha no 2FA",
+    "pergunta": "2FA is not working, I don't get the code.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-01",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Falha no 2FA",
+    "pergunta": "O 2FA não está funcionando, não recebo o código.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-02",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Account",
+    "subcategoria": "Perda de Dispositivo 2FA",
+    "pergunta": "I need to change my email address, but the 2FA is linked to my old phone.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-02",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Perda de Dispositivo 2FA",
+    "pergunta": "Preciso alterar meu e-mail, mas o 2FA está vinculado ao meu celular antigo.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-03",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Account",
+    "subcategoria": "Redefinicao de Senha",
+    "pergunta": "I forgot my password and the reset link is expired.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-03",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Redefinicao de Senha",
+    "pergunta": "Esqueci minha senha e o link de redefinição expirou.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-04",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Account",
+    "subcategoria": "Upgrade Enterprise",
+    "pergunta": "How can I upgrade my subscription to the Enterprise plan?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-04",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Upgrade Enterprise",
+    "pergunta": "Como faço upgrade da minha assinatura para o plano Enterprise?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-05",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Account",
+    "subcategoria": "Foto de Perfil",
+    "pergunta": "How do I update my profile picture?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-05",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Foto de Perfil",
+    "pergunta": "Como eu atualizo a minha foto de perfil?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-06",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Account",
+    "subcategoria": "Exclusao de Conta",
+    "pergunta": "Please delete my account and all associated data immediately.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-06",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Exclusao de Conta",
+    "pergunta": "Por favor, exclua minha conta e todos os dados associados imediatamente.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-07",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Billing",
+    "subcategoria": "Status de Reembolso",
+    "pergunta": "I requested a refund 5 days ago, where is it?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-07",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Status de Reembolso",
+    "pergunta": "Solicitei um reembolso há 5 dias, qual é o status?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-08",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Billing",
+    "subcategoria": "Atualizacao de Pagamento",
+    "pergunta": "Payment method update failed. I cannot add my new Visa card.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-08",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Atualizacao de Pagamento",
+    "pergunta": "A atualização do método de pagamento falhou. Não consigo adicionar meu novo cartão Visa.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-09",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Billing",
+    "subcategoria": "Divergencia na Fatura",
+    "pergunta": "The invoice amount is higher than the agreed contract.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-09",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Divergencia na Fatura",
+    "pergunta": "O valor da fatura veio mais alto do que o contrato acordado.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-10",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Billing",
+    "subcategoria": "Segunda Via de Fatura",
+    "pergunta": "Can you send me the invoice for transaction #99283?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-10",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Segunda Via de Fatura",
+    "pergunta": "Vocês podem me enviar a segunda via da fatura da transação #99283?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-11",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Billing",
+    "subcategoria": "Cancelamento e Renovacao",
+    "pergunta": "My subscription renewed automatically, but I wanted to cancel.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-11",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Cancelamento e Renovacao",
+    "pergunta": "Minha assinatura renovou automaticamente, mas eu queria cancelar.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-12",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Billing",
+    "subcategoria": "Cobranca Duplicada",
+    "pergunta": "I was charged twice for the same month. Here is the receipt.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-12",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Cobranca Duplicada",
+    "pergunta": "Fui cobrado duas vezes no mesmo mês. Aqui está o comprovante.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-13",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Technical",
+    "subcategoria": "Falha de Sincronizacao",
+    "pergunta": "Syncing data between mobile and desktop is failing.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-13",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Technical",
+    "subcategoria": "Falha de Sincronizacao",
+    "pergunta": "A sincronização de dados entre o celular e o desktop está falhando.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-14",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Technical",
+    "subcategoria": "Erro 500 no Login",
+    "pergunta": "I am getting Error 500 when trying to log in, even after resetting my password.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-14",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Technical",
+    "subcategoria": "Erro 500 no Login",
+    "pergunta": "Estou recebendo Erro 500 ao tentar fazer login, mesmo após redefinir minha senha.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-15",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Technical",
+    "subcategoria": "Travamento do Dashboard",
+    "pergunta": "The dashboard is not loading any data, just a spinning wheel.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-15",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Technical",
+    "subcategoria": "Travamento do Dashboard",
+    "pergunta": "O painel não está carregando nenhum dado, fica só uma bolinha girando.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-16",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Technical",
+    "subcategoria": "Integracao de API",
+    "pergunta": "API returns 500 Internal Server Error when fetching user list.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-16",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Technical",
+    "subcategoria": "Integracao de API",
+    "pergunta": "A API retorna erro 500 Internal Server Error ao buscar a lista de usuários.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-17",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Technical",
+    "subcategoria": "Instalacao de Patch",
+    "pergunta": "I cannot install the latest patch on Windows 11.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-17",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Technical",
+    "subcategoria": "Instalacao de Patch",
+    "pergunta": "Não consigo instalar o patch mais recente no Windows 11.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-18",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Technical",
+    "subcategoria": "Fechamento nas Configuracoes",
+    "pergunta": "The app crashes every time I open the settings tab.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-18",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Technical",
+    "subcategoria": "Fechamento nas Configuracoes",
+    "pergunta": "O aplicativo fecha sozinho toda vez que abro a aba de configurações.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-19",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Fraud",
+    "subcategoria": "Tentativa de Phishing",
+    "pergunta": "I received a phishing email pretending to be your support team.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-19",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Tentativa de Phishing",
+    "pergunta": "Recebi um e-mail de phishing se passando pela equipe de suporte de vocês.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-20",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Fraud",
+    "subcategoria": "Cartao Roubado",
+    "pergunta": "My credit card was used on your site without my permission, it was stolen.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-20",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Cartao Roubado",
+    "pergunta": "Meu cartão de crédito foi usado no site de vocês sem minha permissão, ele foi roubado.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-21",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Fraud",
+    "subcategoria": "Conta Invadida",
+    "pergunta": "My account was hacked! Someone made transactions I didn't authorize. Block it now!",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-21",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Conta Invadida",
+    "pergunta": "Minha conta foi invadida! Alguém fez transações que não autorizei. Bloqueiem agora!",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-22",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Fraud",
+    "subcategoria": "Dispositivo Desconhecido",
+    "pergunta": "There is an unrecognized device logged into my account.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-22",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Dispositivo Desconhecido",
+    "pergunta": "Há um dispositivo desconhecido conectado na minha conta.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-23",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Fraud",
+    "subcategoria": "Alerta de Seguranca",
+    "pergunta": "I got a security alert notification about a login from Russia, it wasn't me.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-23",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Alerta de Seguranca",
+    "pergunta": "Recebi um alerta de segurança sobre um login vindo da Rússia, não fui eu.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-24",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "Fraud",
+    "subcategoria": "Transacao Suspeita",
+    "pergunta": "Suspicious activity detected on my billing history.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-24",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Transacao Suspeita",
+    "pergunta": "Atividade suspeita detectada no meu histórico de faturamento.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-25",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "General Inquiry",
+    "subcategoria": "Horario de Atendimento",
+    "pergunta": "What are your hours of operation for phone support?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-25",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "General Inquiry",
+    "subcategoria": "Horario de Atendimento",
+    "pergunta": "Qual é o horário de funcionamento do suporte por telefone?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-26",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "General Inquiry",
+    "subcategoria": "Endereco da Sede",
+    "pergunta": "Where is your main office located?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-26",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "General Inquiry",
+    "subcategoria": "Endereco da Sede",
+    "pergunta": "Onde fica localizado o escritório principal de vocês?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-27",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "General Inquiry",
+    "subcategoria": "Desconto para ONGs",
+    "pergunta": "Do you offer discounts for non-profit organizations?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-27",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "General Inquiry",
+    "subcategoria": "Desconto para ONGs",
+    "pergunta": "Vocês oferecem descontos para organizações sem fins lucrativos?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-28",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "General Inquiry",
+    "subcategoria": "Roadmap de Produto",
+    "pergunta": "Is there a roadmap for new features coming this year?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-28",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "General Inquiry",
+    "subcategoria": "Roadmap de Produto",
+    "pergunta": "Existe um roadmap com os novos recursos previstos para este ano?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-29",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "General Inquiry",
+    "subcategoria": "Solicitacao de Demo",
+    "pergunta": "I would like to request a live demo for my team.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-29",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "General Inquiry",
+    "subcategoria": "Solicitacao de Demo",
+    "pergunta": "Gostaria de solicitar uma demonstração ao vivo para a minha equipe.",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-EN-30",
+    "grupo": "canonico",
+    "idioma": "en",
+    "categoria": "General Inquiry",
+    "subcategoria": "Planos e Precos",
+    "pergunta": "How do the pricing tiers work for teams?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "CAN-PT-30",
+    "grupo": "canonico",
+    "idioma": "pt",
+    "categoria": "General Inquiry",
+    "subcategoria": "Planos e Precos",
+    "pergunta": "Como funcionam os planos e faixas de preço para equipes?",
+    "esperado": {
+      "nivel_escalonamento": "N1"
+    }
+  },
+  {
+    "id_teste": "EDGE-01",
+    "grupo": "borda_n2",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "Eu tentei seguir os passos para bloquear minha conta invadida, mas o botão 'Bloquear Conta Imediatamente' não aparece no meu painel de jeito nenhum, e meu e-mail já tá validado!",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  },
+  {
+    "id_teste": "EDGE-02",
+    "grupo": "borda_n2",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "Perdi meu celular com o autenticador 2FA e também não tenho mais aqueles códigos de recuperação. Como entro na conta?",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  },
+  {
+    "id_teste": "EDGE-03",
+    "grupo": "borda_n2",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "Estou tentando atualizar meu cartão de crédito no painel, mas o sistema diz 'Cartão Rejeitado' sendo que eu acabei de ligar no banco e eles disseram que tá tudo certo lá.",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  },
+  {
+    "id_teste": "EDGE-04",
+    "grupo": "borda_n2",
+    "idioma": "pt",
+    "categoria": "Fraud",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "Recebi um e-mail de vocês pedindo para redefinir a senha e cliquei no link, mas achei a URL meio estranha depois. Acho que caí num golpe de phishing.",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  },
+  {
+    "id_teste": "EDGE-05",
+    "grupo": "borda_n2",
+    "idioma": "pt",
+    "categoria": "Account",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "Tenho duas contas separadas com e-mails diferentes e queria saber se é possível mesclar (merge) as duas em um único login.",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  },
+  {
+    "id_teste": "EDGE-06",
+    "grupo": "borda_n2",
+    "idioma": "pt",
+    "categoria": "Billing",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "Minha nota fiscal saiu com o CNPJ errado, preciso que vocês cancelem e emitam uma nova urgente para a contabilidade não travar o pagamento.",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  },
+  {
+    "id_teste": "EDGE-07",
+    "grupo": "borda_n2",
+    "idioma": "en",
+    "categoria": "Technical",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "I'm trying to export my reports to CSV, but the file downloaded is completely empty. PDF export works fine though.",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  },
+  {
+    "id_teste": "EDGE-08",
+    "grupo": "borda_n2",
+    "idioma": "pt",
+    "categoria": "General Inquiry",
+    "subcategoria": "Escalonamento/Fora de Escopo",
+    "pergunta": "Vocês possuem algum programa de parcerias para agências ou sistema de afiliados (white-label) que eu possa revender a plataforma?",
+    "esperado": {
+      "nivel_escalonamento": "N2"
+    }
+  }
+]
