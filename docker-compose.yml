@@ -33,5 +33,20 @@ services:
       pgvector:
         condition: service_healthy
 
+  frontend:
+    image: node:20-alpine
+    container_name: nexus_frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend-app:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api
+
 volumes:
   pgdata:

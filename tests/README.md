@@ -48,7 +48,7 @@ Valida aderência real dos prompts, modelos padrão e fallback:
 python -m pytest tests/ -v -m llm -p no:warnings
 ```
 
-### Suíte completa (todos os 25 testes)
+### Suíte completa (todos os 34 testes)
 ```bash
 python -m pytest tests/ -v -p no:warnings
 ```

@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import uuid4
-
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, func
 
 from src.agents.schemas import (
     ConfirmacaoHumanaSchema,
@@ -20,7 +19,13 @@ class SessionRepository:
         self._session_factory = session_factory
         self.max_chars_topico = max_chars_topico
 
-    def obter_ou_criar_sessao(self, session_id: str, tenant_id: str = "default") -> ChatSessionDB:
+    def obter_ou_criar_sessao(
+        self,
+        session_id: str,
+        tenant_id: str = "default",
+        customer_name: Optional[str] = None,
+        customer_external_id: Optional[str] = None,
+    ) -> ChatSessionDB:
         with self._session_factory() as db:
             stmt = select(ChatSessionDB).where(
                 ChatSessionDB.session_id == session_id,
@@ -28,7 +33,20 @@ class SessionRepository:
             )
             sessao = db.execute(stmt).scalar_one_or_none()
             if sessao is None:
-                sessao = ChatSessionDB(session_id=session_id, tenant_id=tenant_id)
+                if not customer_external_id:
+                    total = db.execute(
+                        select(func.count(ChatSessionDB.session_id)).where(
+                            ChatSessionDB.tenant_id == tenant_id
+                        )
+                    ).scalar_one()
+                    customer_external_id = f"cli-{total + 1:03d}"
+
+                sessao = ChatSessionDB(
+                    session_id=session_id,
+                    tenant_id=tenant_id,
+                    customer_name=customer_name,
+                    customer_external_id=customer_external_id,
+                )
                 db.add(sessao)
                 db.commit()
                 db.refresh(sessao)
@@ -322,7 +340,12 @@ class SessionRepository:
             linhas.append(f"{autor}: {m.content}")
         return "\n".join(linhas)
 
-
+    @staticmethod
+    def _extrair_motivo_auditoria(trace: Optional[CopilotTraceabilityDB]) -> Optional[str]:
+        if not trace or not isinstance(trace.caixa_completa, dict):
+            return None
+        auditoria = trace.caixa_completa.get("auditoria") or {}
+        return auditoria.get("analise_raciocinio") or auditoria.get("feedback_correcao")
 
     def listar_sessoes(
         self,
@@ -400,16 +423,79 @@ class SessionRepository:
             if not sessao:
                 return None
 
+            trace_escalada = db.execute(
+                select(CopilotTraceabilityDB)
+                .where(
+                    CopilotTraceabilityDB.session_id == session_id,
+                    CopilotTraceabilityDB.tenant_id == tenant_id,
+                    CopilotTraceabilityDB.requer_escalonamento.is_(True),
+                )
+                .order_by(CopilotTraceabilityDB.created_at.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+
+            if trace_escalada is None and sessao.status == "ESCALADA_N2":
+                trace_escalada = db.execute(
+                    select(CopilotTraceabilityDB)
+                    .where(
+                        CopilotTraceabilityDB.session_id == session_id,
+                        CopilotTraceabilityDB.tenant_id == tenant_id,
+                    )
+                    .order_by(CopilotTraceabilityDB.created_at.desc())
+                    .limit(1)
+                ).scalar_one_or_none()
+
             dados = self._serializar_sessao(sessao)
             dados["pending_suggestion"] = sessao.pending_suggestion
+            dados["auditor_escalation_reason"] = self._extrair_motivo_auditoria(trace_escalada)
             dados["mensagens"] = self.listar_mensagens_sessao(session_id, tenant_id=tenant_id)
             return dados
+        
+    def registrar_mensagem_direta(
+        self,
+        session_id: str,
+        tenant_id: str,
+        sender_role: str,
+        content: str,
+    ) -> dict[str, Any]:
+        with self._session_factory() as db:
+            sessao = db.execute(
+                select(ChatSessionDB).where(
+                    ChatSessionDB.session_id == session_id,
+                    ChatSessionDB.tenant_id == tenant_id,
+                )
+            ).scalar_one_or_none()
+            if sessao is None:
+                raise ValueError("Sessão não encontrada.")
+
+            sessao.turno_global = (sessao.turno_global or 0) + 1
+            msg = ChatMessageDB(
+                message_id=f"MSG-{uuid4().hex[:12]}",
+                session_id=session_id,
+                tenant_id=tenant_id,
+                turn_number=sessao.turno_global,
+                sender_role=sender_role,
+                topic_category=sessao.categoria_atual,
+                content=content,
+            )
+            db.add(msg)
+            db.commit()
+            db.refresh(msg)
+            return {
+                "message_id": msg.message_id,
+                "turn_number": msg.turn_number,
+                "sender_role": msg.sender_role,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat() if msg.created_at else None,
+            }
 
     @staticmethod
     def _serializar_sessao(s: ChatSessionDB) -> dict[str, Any]:
         return {
             "session_id": s.session_id,
             "tenant_id": s.tenant_id,
+            "customer_name": s.customer_name,
+            "customer_external_id": s.customer_external_id,
             "status": s.status,
             "turno_global": s.turno_global,
             "turnos_no_topico_atual": s.turnos_no_topico_atual,

@@ -10,3 +10,4 @@ logs
 docs
 *.html
 sandbox
+frontend-app/node_modules
