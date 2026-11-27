@@ -6,7 +6,7 @@ Esta pasta reúne os testes automatizados de regressão da pipeline multi-agente
 
 ---
 
-## 1. Estrutura da Suíte (25 testes)
+## 1. Estrutura da Suíte (34 testes)
 
 | Arquivo | Qtd | Marcador | Dependências | O que valida |
 | :--- | :---: | :---: | :--- | :--- |
@@ -15,7 +15,9 @@ Esta pasta reúne os testes automatizados de regressão da pipeline multi-agente
 | `test_pipeline_db.py` | 2 | — | PostgreSQL (Docker) | Execução paralela no Turno 1 (`Classificador` + embedding), RAG sem `category_filter`, isolamento de histórico entre tópicos, compactação em background e handoff. |
 | `test_agents.py` | 9 | `llm` | NVIDIA NIM (`.env`) | Testes parametrizados individuais dos 4 agentes (Classificador, Redator N1, Auditor QA e Resumidor — handoff e compactação) incluindo prompt injection e alucinação. |
 | `test_multiturn.py` | 1 | `llm` | PostgreSQL + NVIDIA NIM | Fluxo E2E de 2 turnos com LLMs reais validando follow-up, reutilização de cache RAG (`0 ms`) e escalonamento N2 com geração de `handoff_summary`. |
-
+| `test_api_endpoints.py` | 4 | — | PostgreSQL (Docker) | Rotas REST (`/health`, `/ready`, `/sessions`, `/close`), isolamento multi-tenant, privacidade `view=client`, WebSockets e fila do especialista. |
+| `test_hitl_rules.py` | 3 | — | Nenhuma (offline) | Cálculo de edição (`was_edited`/`edit_ratio`) e regra de chamada sob demanda do Resumidor apenas no escalonamento N2. |
+| `test_pipeline_hitl.py` | 2 | — | PostgreSQL (Docker) | Fluxo multi-turno HITL validando sugestão pendente sem confirmação, continuação e troca de tópico. |
 ---
 
 ## 2. Pré-requisitos
