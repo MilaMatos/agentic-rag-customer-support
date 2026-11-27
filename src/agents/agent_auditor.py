@@ -6,6 +6,9 @@ from crewai import Agent, Task, Crew, Process, LLM
 from src.agents.prompts.auditor import construir_prompt_auditor
 from src.agents.parsers import extrair_json_auditoria
 from src.agents.schemas import VereditoAuditorSchema
+from src.agents.retry import executar_crew_com_retry
+
+from src.agents.llm_factory import criar_llm
 
 load_dotenv()
 
@@ -20,16 +23,7 @@ class AgenteAuditorQualidade:
         if not API_KEY:
             raise ValueError("NVIDIA_API_KEY não encontrada no .env")
 
-        self.llm = LLM(
-            model=model_name,
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.0,
-            max_tokens=1024,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
+        self.llm = criar_llm(model_name, temperature=0.0)
 
     def executar(
         self,
@@ -68,7 +62,7 @@ class AgenteAuditorQualidade:
             process=Process.sequential,
             verbose=False,
         )
-        crew.kickoff()
+        executar_crew_com_retry(crew)
 
         dict_auditoria = extrair_json_auditoria(task.output.raw)
         return VereditoAuditorSchema(**dict_auditoria)

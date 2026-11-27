@@ -7,6 +7,9 @@ from crewai import Agent, Task, Crew, Process, LLM
 from src.agents.prompts.redactor import construir_prompt_redator
 from src.agents.parsers import separar_mensagem_e_fonte
 from src.agents.tools import buscar_manual_rag_tool
+from src.agents.retry import executar_crew_com_retry
+
+from src.agents.llm_factory import criar_llm
 
 load_dotenv()
 logging.getLogger("crewai.llms.base_llm").setLevel(logging.ERROR)
@@ -22,16 +25,7 @@ class AgenteRedatorN1:
         if not API_KEY:
             raise ValueError("NVIDIA_API_KEY não encontrada no .env")
 
-        self.llm = LLM(
-            model=model_name,
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.1,
-            max_tokens=1024,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
+        self.llm = criar_llm(model_name, temperature=0.1)
         self.tools = [buscar_manual_rag_tool]
 
     def executar(
@@ -76,6 +70,6 @@ class AgenteRedatorN1:
             process=Process.sequential,
             verbose=False,
         )
-        crew.kickoff()
+        executar_crew_com_retry(crew)
 
         return separar_mensagem_e_fonte(task.output.raw)

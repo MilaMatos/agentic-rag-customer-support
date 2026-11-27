@@ -5,6 +5,9 @@ from crewai import Agent, Task, Crew, Process, LLM
 from src.agents.prompts.classifier import construir_prompt_classificador
 from src.agents.parsers import extrair_json_classificacao
 from src.agents.schemas import TicketClassification
+from src.agents.retry import executar_crew_com_retry
+
+from src.agents.llm_factory import criar_llm
 
 load_dotenv()
 
@@ -19,16 +22,7 @@ class AgenteClassificador:
         if not API_KEY:
             raise ValueError("NVIDIA_API_KEY não encontrada no .env")
 
-        self.llm = LLM(
-            model=model_name,
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.0,
-            max_tokens=512,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
+        self.llm = criar_llm(model_name, temperature=0.0)
 
     def executar(
         self,
@@ -67,7 +61,7 @@ class AgenteClassificador:
             process=Process.sequential,
             verbose=False,
         )
-        crew.kickoff()
+        executar_crew_com_retry(crew)
 
         dados_dict = extrair_json_classificacao(task.output.raw)
         return TicketClassification(**dados_dict)

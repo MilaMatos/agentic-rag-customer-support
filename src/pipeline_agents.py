@@ -40,17 +40,22 @@ MIN_SIMILARITY = 0.30
 ARQUIVO_TESTES = Path("data/evaluation/testes_e3.json")
 PASTA_RASTREABILIDADE = Path("logs/rastreabilidade")
 PASTA_RASTREABILIDADE.mkdir(parents=True, exist_ok=True)
-
+MODELO_PADRAO = "nvidia/nemotron-3.5-lightning-30b-a3b"
 
 class NexusSupportPipeline:
     """Orquestrador Multi-Agente RAG do NexusTech Support Copilot."""
 
-    def __init__(self, session_repo: Optional[SessionRepository] = None):
+    def __init__(
+        self,
+        session_repo: Optional[SessionRepository] = None,
+        model_config: Optional[dict[str, str]] = None
+    ):
+        cfg = model_config or {}
         self.retriever = NexusRetriever()
-        self.classificador = AgenteClassificador()
-        self.redator = AgenteRedatorN1()
-        self.auditor = AgenteAuditorQualidade()
-        self.resumidor = AgenteResumo()
+        self.classificador = AgenteClassificador(model_name=cfg.get("classifier", MODELO_PADRAO))
+        self.redator = AgenteRedatorN1(model_name=cfg.get("redactor", MODELO_PADRAO))
+        self.auditor = AgenteAuditorQualidade(model_name=cfg.get("auditor", MODELO_PADRAO))
+        self.resumidor = AgenteResumo(model_name=cfg.get("summarizer", MODELO_PADRAO))
         self.session_repo = session_repo or SessionRepository()
         self._bg_executor = ThreadPoolExecutor(max_workers=4)
         self._bg_lock = threading.Lock()
@@ -195,7 +200,7 @@ class NexusSupportPipeline:
         chunks = self.retriever.buscar_chunks(
             query=pergunta_cliente,
             k=1,
-            category_filter=triagem.category,
+            category_filter=None,
             min_similarity=MIN_SIMILARITY,
         )
         tempo_rag = round(time.time() - t1, 3)
@@ -277,7 +282,7 @@ class NexusSupportPipeline:
             chunks = self.retriever.buscar_chunks_por_vetor(
                 embedding=vetor,
                 k=1,
-                category_filter=triagem.category,
+                category_filter=None,
                 min_similarity=MIN_SIMILARITY,
             )
         else:
@@ -285,7 +290,7 @@ class NexusSupportPipeline:
             chunks = self.retriever.buscar_chunks(
                 query=query_busca,
                 k=1,
-                category_filter=triagem.category,
+                category_filter=None,
                 min_similarity=MIN_SIMILARITY,
             )
         tempo_retrieval = round(time.perf_counter() - t1, 3)
@@ -342,7 +347,7 @@ class NexusSupportPipeline:
                 chunks = self.retriever.buscar_chunks(
                     query=query_busca,
                     k=1,
-                    category_filter=triagem.category,
+                    category_filter=None,
                     min_similarity=MIN_SIMILARITY,
                 )
                 proximo_turno_topico = 1
@@ -514,7 +519,7 @@ class NexusSupportPipeline:
             chunks = self.retriever.buscar_chunks(
                 query=query_busca,
                 k=1,
-                category_filter=triagem.category,
+                category_filter=None,
                 min_similarity=MIN_SIMILARITY,
             )
         tempos["retrieval_s"] = round(time.perf_counter() - t0, 3)

@@ -4,6 +4,9 @@ from crewai import Agent, Task, Crew, Process, LLM
 
 from src.agents.prompts.summarizer import construir_prompt_resumo
 from src.agents.parsers import limpar_texto_resumo
+from src.agents.retry import executar_crew_com_retry
+
+from src.agents.llm_factory import criar_llm
 
 load_dotenv()
 
@@ -18,16 +21,7 @@ class AgenteResumo:
         if not API_KEY:
             raise ValueError("NVIDIA_API_KEY não encontrada no .env")
 
-        self.llm = LLM(
-            model=model_name,
-            custom_openai=True,
-            base_url=BASE_URL,
-            api_key=API_KEY,
-            temperature=0.0,
-            max_tokens=512,
-            additional_params={"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
-            timeout=30,
-        )
+        self.llm = criar_llm(model_name, temperature=0.0)
 
     def executar(self, resposta_final_cliente: str) -> str:
         prompts = construir_prompt_resumo(resposta_final_cliente)
@@ -53,7 +47,7 @@ class AgenteResumo:
             process=Process.sequential,
             verbose=False,
         )
-        crew.kickoff()
+        executar_crew_com_retry(crew)
 
         return limpar_texto_resumo(task.output.raw)
 
@@ -86,5 +80,5 @@ class AgenteResumo:
             agent=agente,
         )
         crew = Crew(agents=[agente], tasks=[task], process=Process.sequential, verbose=False)
-        crew.kickoff()
+        executar_crew_com_retry(crew)
         return limpar_texto_resumo(task.output.raw)
